@@ -34,6 +34,30 @@ folder:SetAttribute("Shadow", 0)   -- 0 = 템플릿 그대로 · 1 = 큰 파트�
 
 -- 그림자 모드(GPU 측정용): 큰 몸통·다리 파트만 남기면 땅 그림자는 유지된다
 local BIG_SHADOW = { Pelvis = true, Torso = true, Backpack = true, UpperLegL = true, UpperLegR = true, LowerLegL = true, LowerLegR = true }
+-- 재질(SurfaceAppearance) 끄기 · 작은 파트 숨기기(GPU 원인 좁히기용 — 겉모습이 바뀐다)
+folder:SetAttribute("NoMaterial", false)
+folder:SetAttribute("HideSmall", false)
+local saStore = setmetatable({}, { __mode = "k" })   -- 모델 → { {sa, parent}, ... }
+local function applyLook(m)
+	local noMat = folder:GetAttribute("NoMaterial")
+	local list = saStore[m]
+	if not list then
+		list = {}
+		for _, d in ipairs(m:GetDescendants()) do
+			if d:IsA("SurfaceAppearance") then table.insert(list, { d, d.Parent }) end
+		end
+		saStore[m] = list
+	end
+	for _, e in ipairs(list) do e[1].Parent = (not noMat) and e[2] or nil end
+	local hide = folder:GetAttribute("HideSmall")
+	for _, d in ipairs(m:GetDescendants()) do
+		if d:IsA("BasePart") and d.Name ~= "HumanoidRootPart" then
+			if d:GetAttribute("StressOrigTransp") == nil then d:SetAttribute("StressOrigTransp", d.Transparency) end
+			d.Transparency = (hide and not BIG_SHADOW[d.Name]) and 1 or d:GetAttribute("StressOrigTransp")
+		end
+	end
+end
+
 local function applyShadow(m)
 	local mode = folder:GetAttribute("Shadow") or 0
 	for _, d in ipairs(m:GetDescendants()) do
@@ -139,6 +163,7 @@ local function spawnBot(index)
 
 	root.Anchored = false
 	applyShadow(m)
+	applyLook(m)
 	m.Parent = folder
 	root:SetNetworkOwner(nil)
 	CollectionService:AddTag(m, "MechDisplay")
@@ -164,6 +189,9 @@ end
 cmd.OnServerEvent:Connect(function(player, action, value)
 	if action == "setCount" then
 		setCount(value, player)
+	elseif action == "look" and (value == "NoMaterial" or value == "HideSmall") then
+		folder:SetAttribute(value, not folder:GetAttribute(value))
+		for _, b in ipairs(bots) do applyLook(b.model) end
 	elseif action == "shadow" then
 		folder:SetAttribute("Shadow", ((folder:GetAttribute("Shadow") or 0) + 1) % 3)
 		for _, b in ipairs(bots) do applyShadow(b.model) end
