@@ -14,10 +14,10 @@ local player = Players.LocalPlayer
 local cmd = ReplicatedStorage:WaitForChild("MechStressCmd")
 local folder = workspace:WaitForChild("StressMechs")
 
--- 프레임마다 실제로 쓴 시간(60 FPS 상한과 상관없음). 속성이 없는 버전이면 -1
+-- 프레임마다 실제로 쓴 시간(ms, 60 FPS 상한과 상관없음). 속성이 없는 버전이면 -1
 local function statMs(name)
 	local ok, v = pcall(function() return Stats[name] end)
-	if ok and type(v) == "number" then return v end
+	if ok and type(v) == "number" then return v * 1000 end   -- Stats 값은 초 단위 → ms
 	return -1
 end
 
