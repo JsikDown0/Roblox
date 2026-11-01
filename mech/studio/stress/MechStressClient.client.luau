@@ -97,6 +97,8 @@ local bWalk = button("걷기", 3, function() cmd:FireServer("flag", "Walk") end)
 local bFire = button("사격", 4, function() cmd:FireServer("flag", "Fire") end)
 local bAim = button("조준", 5, function() cmd:FireServer("flag", "Aim") end)
 button("중심 다시", 6, function() if not busy then cmd:FireServer("recenter") end end)
+local SHADOW_NAMES = { [0] = "그림자: 원래", [1] = "그림자: 큰것만", [2] = "그림자: 끔" }
+local bShadow = button("그림자: 원래", 8, function() cmd:FireServer("shadow") end)
 local bAuto
 
 local function flagColor(b, on) b.BackgroundColor3 = on and Color3.fromRGB(40, 140, 90) or Color3.fromRGB(55, 60, 75) end
@@ -113,7 +115,7 @@ local function runAuto()
 	if busy then return end
 	busy = true; bAuto.Text = "측정 중…"
 	results = {}
-	local flags = ("걷기=%s 사격=%s 조준=%s"):format(tostring(folder:GetAttribute("Walk")), tostring(folder:GetAttribute("Fire")), tostring(folder:GetAttribute("Aim")))
+	local flags = ("걷기=%s 사격=%s 조준=%s 그림자=%d"):format(tostring(folder:GetAttribute("Walk")), tostring(folder:GetAttribute("Fire")), tostring(folder:GetAttribute("Aim")), folder:GetAttribute("Shadow") or 0)
 	for _, n in ipairs(STAGES) do
 		cmd:FireServer("setCount", n)
 		local t0 = os.clock()
@@ -163,6 +165,7 @@ task.spawn(function()
 		info.Text = ("기체 %d대 · %s%s\nFPS %.1f (저점 %.1f) · CPU %.2fms · GPU %.2fms\n메모리 %dMB · 핑 %dms · 서버 %.1f%s"):format(
 			count(), platform(), busy and " · 자동 측정 중" or "",
 			avg, low, statMs("RenderCPUFrameTime"), statMs("RenderGPUFrameTime"), memMB(), pingMS(), folder:GetAttribute("ServerFPS") or 0, lastLine)
+		bShadow.Text = SHADOW_NAMES[folder:GetAttribute("Shadow") or 0] or "그림자"
 		flagColor(bWalk, folder:GetAttribute("Walk")); flagColor(bFire, folder:GetAttribute("Fire")); flagColor(bAim, folder:GetAttribute("Aim"))
 	end
 end)

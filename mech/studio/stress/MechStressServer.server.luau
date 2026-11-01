@@ -30,6 +30,22 @@ folder.Parent = workspace
 folder:SetAttribute("Walk", true)
 folder:SetAttribute("Fire", false)
 folder:SetAttribute("Aim", true)
+folder:SetAttribute("Shadow", 0)   -- 0 = 템플릿 그대로 · 1 = 큰 파트만 그림자 · 2 = 그림자 전부 끔
+
+-- 그림자 모드(GPU 측정용): 큰 몸통·다리 파트만 남기면 땅 그림자는 유지된다
+local BIG_SHADOW = { Pelvis = true, Torso = true, Backpack = true, UpperLegL = true, UpperLegR = true, LowerLegL = true, LowerLegR = true }
+local function applyShadow(m)
+	local mode = folder:GetAttribute("Shadow") or 0
+	for _, d in ipairs(m:GetDescendants()) do
+		if d:IsA("BasePart") then
+			if d:GetAttribute("StressOrigShadow") == nil then d:SetAttribute("StressOrigShadow", d.CastShadow) end
+			local orig = d:GetAttribute("StressOrigShadow")
+			if mode == 0 then d.CastShadow = orig
+			elseif mode == 1 then d.CastShadow = orig and BIG_SHADOW[d.Name] == true
+			else d.CastShadow = false end
+		end
+	end
+end
 
 local cmd = ReplicatedStorage:FindFirstChild("MechStressCmd") or Instance.new("RemoteEvent")
 cmd.Name = "MechStressCmd"
@@ -122,6 +138,7 @@ local function spawnBot(index)
 	face.Parent = root
 
 	root.Anchored = false
+	applyShadow(m)
 	m.Parent = folder
 	root:SetNetworkOwner(nil)
 	CollectionService:AddTag(m, "MechDisplay")
@@ -147,6 +164,9 @@ end
 cmd.OnServerEvent:Connect(function(player, action, value)
 	if action == "setCount" then
 		setCount(value, player)
+	elseif action == "shadow" then
+		folder:SetAttribute("Shadow", ((folder:GetAttribute("Shadow") or 0) + 1) % 3)
+		for _, b in ipairs(bots) do applyShadow(b.model) end
 	elseif action == "flag" and (value == "Walk" or value == "Fire" or value == "Aim") then
 		folder:SetAttribute(value, not folder:GetAttribute(value))
 	elseif action == "recenter" then
