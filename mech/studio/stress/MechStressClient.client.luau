@@ -14,6 +14,13 @@ local player = Players.LocalPlayer
 local cmd = ReplicatedStorage:WaitForChild("MechStressCmd")
 local folder = workspace:WaitForChild("StressMechs")
 
+-- 프레임마다 실제로 쓴 시간(60 FPS 상한과 상관없음). 속성이 없는 버전이면 -1
+local function statMs(name)
+	local ok, v = pcall(function() return Stats[name] end)
+	if ok and type(v) == "number" then return v end
+	return -1
+end
+
 -- ---------- 프레임 기록 ----------
 local recent = {}          -- 최근 1초 dt(화면 표시용)
 local recording = nil      -- 자동 측정 중 dt 목록
@@ -44,12 +51,6 @@ local function summarize(list)
 end
 
 local function memMB() return math.floor(Stats:GetTotalMemoryUsageMb()) end
--- 프레임마다 실제로 쓴 시간(60 FPS 상한과 상관없음). 속성이 없는 버전이면 -1
-local function statMs(name)
-	local ok, v = pcall(function() return Stats[name] end)
-	if ok and type(v) == "number" then return v end
-	return -1
-end
 local function pingMS() return math.floor(player:GetNetworkPing() * 1000) end
 
 -- ---------- 화면 ----------
