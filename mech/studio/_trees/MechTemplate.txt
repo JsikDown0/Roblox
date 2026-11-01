@@ -1,0 +1,100 @@
+MechTemplate [Model] {}
+  UpperLegR [MeshPart] {'Anchored': 'false', 'CanCollide': 'false'}
+    HipR [Motor6D] {'Part0': 'Pelvis', 'Part1': 'UpperLegR'}
+    SurfaceAppearance [SurfaceAppearance] {}
+  Pelvis [MeshPart] {'Anchored': 'false', 'CanCollide': 'false'}
+    Root [Motor6D] {'Part0': 'HumanoidRootPart', 'Part1': 'Pelvis'}
+    SurfaceAppearance [SurfaceAppearance] {}
+  Head [MeshPart] {'Anchored': 'false', 'CanCollide': 'false'}
+    Neck [Motor6D] {'Part0': 'Torso', 'Part1': 'Head'}
+    SurfaceAppearance [SurfaceAppearance] {}
+  FootL [MeshPart] {'Anchored': 'false', 'CanCollide': 'false'}
+    AnkleL [Motor6D] {'Part0': 'LowerLegL', 'Part1': 'FootL'}
+    SurfaceAppearance [SurfaceAppearance] {}
+  FootR [MeshPart] {'Anchored': 'false', 'CanCollide': 'false'}
+    AnkleR [Motor6D] {'Part0': 'LowerLegR', 'Part1': 'FootR'}
+    SurfaceAppearance [SurfaceAppearance] {}
+  LowerLegL [MeshPart] {'Anchored': 'false', 'CanCollide': 'false'}
+    KneeL [Motor6D] {'Part0': 'UpperLegL', 'Part1': 'LowerLegL'}
+    SurfaceAppearance [SurfaceAppearance] {}
+  LowerLegR [MeshPart] {'Anchored': 'false', 'CanCollide': 'false'}
+    KneeR [Motor6D] {'Part0': 'UpperLegR', 'Part1': 'LowerLegR'}
+    SurfaceAppearance [SurfaceAppearance] {}
+  UpperLegL [MeshPart] {'Anchored': 'false', 'CanCollide': 'false'}
+    HipL [Motor6D] {'Part0': 'Pelvis', 'Part1': 'UpperLegL'}
+    SurfaceAppearance [SurfaceAppearance] {}
+  Torso [MeshPart] {'Anchored': 'false', 'CanCollide': 'false'}
+    Waist [Motor6D] {'Part0': 'Pelvis', 'Part1': 'Torso'}
+    SurfaceAppearance [SurfaceAppearance] {}
+  UpperArmL [MeshPart] {'Anchored': 'false', 'CanCollide': 'false'}
+    ShoulderL [Motor6D] {'Part0': 'Torso', 'Part1': 'UpperArmL'}
+    SurfaceAppearance [SurfaceAppearance] {}
+  UpperArmR [MeshPart] {'Anchored': 'false', 'CanCollide': 'false'}
+    ShoulderR [Motor6D] {'Part0': 'Torso', 'Part1': 'UpperArmR'}
+    SurfaceAppearance [SurfaceAppearance] {}
+  LowerArmL [MeshPart] {'Anchored': 'false', 'CanCollide': 'false'}
+    ElbowL [Motor6D] {'Part0': 'UpperArmL', 'Part1': 'LowerArmL'}
+    SurfaceAppearance [SurfaceAppearance] {}
+    SaberGrip [Motor6D] {'Part0': 'LowerArmL', 'Part1': 'SaberHilt'}
+  LowerArmR [MeshPart] {'Anchored': 'false', 'CanCollide': 'false'}
+    ElbowR [Motor6D] {'Part0': 'UpperArmR', 'Part1': 'LowerArmR'}
+    SurfaceAppearance [SurfaceAppearance] {}
+  Backpack [MeshPart] {'Anchored': 'false', 'CanCollide': 'false'}
+    Pack [Motor6D] {'Part0': 'Torso', 'Part1': 'Backpack'}
+    ThrusterL [Attachment] {}
+      Flame [ParticleEmitter] {}
+    ExhaustL [Attachment] {}
+      Flame [ParticleEmitter] {}
+    ThrusterR [Attachment] {}
+      Flame [ParticleEmitter] {}
+    ExhaustR [Attachment] {}
+      Flame [ParticleEmitter] {}
+    BoostLight [PointLight] {}
+    SurfaceAppearance [SurfaceAppearance] {}
+  Rifle [MeshPart] {'Anchored': 'false', 'CanCollide': 'false'}
+    Grip [Motor6D] {'Part0': 'LowerArmR', 'Part1': 'Rifle'}
+    Muzzle [Attachment] {}
+      FlashLight [PointLight] {}
+    SurfaceAppearance [SurfaceAppearance] {}
+  HumanoidRootPart [Part] {'Anchored': 'false', 'CanCollide': 'true'}
+    BoardPrompt [ProximityPrompt] {}
+  Humanoid [Humanoid] {}
+  Saber [Folder] {}
+    InHand [Folder] {}
+      SaberHilt [Part] {'Anchored': 'false', 'CanCollide': 'false'}
+      SaberBlade [Part] {'Anchored': 'false', 'CanCollide': 'false'}
+        WeldConstraint [WeldConstraint] {}
+        BladeBase [Attachment] {}
+        BladeTip [Attachment] {}
+        SaberTrail [Trail] {}
+        SaberLight [PointLight] {}
+      SaberGlow [Part] {'Anchored': 'false', 'CanCollide': 'false'}
+        WeldConstraint [WeldConstraint] {}
+      SaberNozzle [Part] {'Anchored': 'false', 'CanCollide': 'false'}
+        WeldConstraint [WeldConstraint] {}
+      SaberPommel [Part] {'Anchored': 'false', 'CanCollide': 'false'}
+        WeldConstraint [WeldConstraint] {}
+    Holster [Folder] {}
+      HolsterHilt [Part] {'Anchored': 'false', 'CanCollide': 'false'}
+        WeldConstraint [WeldConstraint] {}
+      HolsterNozzle [Part] {'Anchored': 'false', 'CanCollide': 'false'}
+        WeldConstraint [WeldConstraint] {}
+      HolsterPommel [Part] {'Anchored': 'false', 'CanCollide': 'false'}
+        WeldConstraint [WeldConstraint] {}
+  RifleStowed [MeshPart] {'Anchored': 'false', 'CanCollide': 'false'}
+    SurfaceAppearance [SurfaceAppearance] {}
+    WeldConstraint [WeldConstraint] {}
+  RifleStrap [Part] {'Anchored': 'false', 'CanCollide': 'false'}
+    WeldConstraint [WeldConstraint] {}
+  RifleStrap [Part] {'Anchored': 'false', 'CanCollide': 'false'}
+    WeldConstraint [WeldConstraint] {}
+  MissilePodR [MeshPart] {'Anchored': 'false', 'CanCollide': 'false'}
+    PodWeld [WeldConstraint] {}
+    Tube1 [Attachment] {}
+    Tube2 [Attachment] {}
+    Tube3 [Attachment] {}
+  MissilePodL [MeshPart] {'Anchored': 'false', 'CanCollide': 'false'}
+    PodWeld [WeldConstraint] {}
+    Tube1 [Attachment] {}
+    Tube2 [Attachment] {}
+    Tube3 [Attachment] {}

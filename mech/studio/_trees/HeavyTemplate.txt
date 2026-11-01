@@ -1,0 +1,131 @@
+HeavyTemplate [Model] {}
+  LowerArmR [MeshPart] {'Anchored': 'false', 'CanCollide': 'false'}
+    ElbowR [Motor6D] {'Part0': 'UpperArmR', 'Part1': 'LowerArmR'}
+    SurfaceAppearance [SurfaceAppearance] {}
+  UpperArmL [MeshPart] {'Anchored': 'false', 'CanCollide': 'false'}
+    ShoulderL [Motor6D] {'Part0': 'Torso', 'Part1': 'UpperArmL'}
+    SurfaceAppearance [SurfaceAppearance] {}
+  Torso [MeshPart] {'Anchored': 'false', 'CanCollide': 'false'}
+    Waist [Motor6D] {'Part0': 'Pelvis', 'Part1': 'Torso'}
+    SurfaceAppearance [SurfaceAppearance] {}
+  UpperLegR [MeshPart] {'Anchored': 'false', 'CanCollide': 'false'}
+    HipR [Motor6D] {'Part0': 'Pelvis', 'Part1': 'UpperLegR'}
+    SurfaceAppearance [SurfaceAppearance] {}
+  ShoulderPadL [MeshPart] {'Anchored': 'false', 'CanCollide': 'false'}
+    PadL [Motor6D] {'Part0': 'Torso', 'Part1': 'ShoulderPadL'}
+    SurfaceAppearance [SurfaceAppearance] {}
+  LowerArmL [MeshPart] {'Anchored': 'false', 'CanCollide': 'false'}
+    ElbowL [Motor6D] {'Part0': 'UpperArmL', 'Part1': 'LowerArmL'}
+    SurfaceAppearance [SurfaceAppearance] {}
+    SaberGrip [Motor6D] {'Part0': 'LowerArmL', 'Part1': 'AxeRod'}
+    GrappleMuzzle [Attachment] {}
+  SkirtFL [MeshPart] {'Anchored': 'false', 'CanCollide': 'false'}
+    SkirtJointFL [Motor6D] {'Part0': 'Pelvis', 'Part1': 'SkirtFL'}
+    SurfaceAppearance [SurfaceAppearance] {}
+  Backpack [MeshPart] {'Anchored': 'false', 'CanCollide': 'false'}
+    Pack [Motor6D] {'Part0': 'Torso', 'Part1': 'Backpack'}
+    SurfaceAppearance [SurfaceAppearance] {}
+    NozzleUL [Attachment] {}
+      Flame [ParticleEmitter] {}
+    NozzleUR [Attachment] {}
+      Flame [ParticleEmitter] {}
+    NozzleDL [Attachment] {}
+      Flame [ParticleEmitter] {}
+    NozzleDR [Attachment] {}
+      Flame [ParticleEmitter] {}
+    BoostLightAtt [Attachment] {}
+      BoostLight [PointLight] {}
+    AmmoBoxJoint [Motor6D] {'Part0': 'Backpack', 'Part1': 'AmmoBox'}
+  SkirtSR [MeshPart] {'Anchored': 'false', 'CanCollide': 'false'}
+    SkirtJointSR [Motor6D] {'Part0': 'Pelvis', 'Part1': 'SkirtSR'}
+    SurfaceAppearance [SurfaceAppearance] {}
+  LowerLegL [MeshPart] {'Anchored': 'false', 'CanCollide': 'false'}
+    KneeL [Motor6D] {'Part0': 'UpperLegL', 'Part1': 'LowerLegL'}
+    SurfaceAppearance [SurfaceAppearance] {}
+  FootR [MeshPart] {'Anchored': 'false', 'CanCollide': 'false'}
+    AnkleR [Motor6D] {'Part0': 'LowerLegR', 'Part1': 'FootR'}
+    SurfaceAppearance [SurfaceAppearance] {}
+  UpperArmR [MeshPart] {'Anchored': 'false', 'CanCollide': 'false'}
+    ShoulderR [Motor6D] {'Part0': 'Torso', 'Part1': 'UpperArmR'}
+    SurfaceAppearance [SurfaceAppearance] {}
+  LowerLegR [MeshPart] {'Anchored': 'false', 'CanCollide': 'false'}
+    KneeR [Motor6D] {'Part0': 'UpperLegR', 'Part1': 'LowerLegR'}
+    SurfaceAppearance [SurfaceAppearance] {}
+  FootL [MeshPart] {'Anchored': 'false', 'CanCollide': 'false'}
+    AnkleL [Motor6D] {'Part0': 'LowerLegL', 'Part1': 'FootL'}
+    SurfaceAppearance [SurfaceAppearance] {}
+  UpperLegL [MeshPart] {'Anchored': 'false', 'CanCollide': 'false'}
+    HipL [Motor6D] {'Part0': 'Pelvis', 'Part1': 'UpperLegL'}
+    SurfaceAppearance [SurfaceAppearance] {}
+  SkirtSL [MeshPart] {'Anchored': 'false', 'CanCollide': 'false'}
+    SkirtJointSL [Motor6D] {'Part0': 'Pelvis', 'Part1': 'SkirtSL'}
+    SurfaceAppearance [SurfaceAppearance] {}
+  ShoulderPadR [MeshPart] {'Anchored': 'false', 'CanCollide': 'false'}
+    PadR [Motor6D] {'Part0': 'Torso', 'Part1': 'ShoulderPadR'}
+    SurfaceAppearance [SurfaceAppearance] {}
+  Pelvis [MeshPart] {'Anchored': 'false', 'CanCollide': 'false'}
+    Root [Motor6D] {'Part0': 'HumanoidRootPart', 'Part1': 'Pelvis'}
+    SurfaceAppearance [SurfaceAppearance] {}
+  SkirtFR [MeshPart] {'Anchored': 'false', 'CanCollide': 'false'}
+    SkirtJointFR [Motor6D] {'Part0': 'Pelvis', 'Part1': 'SkirtFR'}
+    SurfaceAppearance [SurfaceAppearance] {}
+  Head [MeshPart] {'Anchored': 'false', 'CanCollide': 'false'}
+    Neck [Motor6D] {'Part0': 'Torso', 'Part1': 'Head'}
+    SurfaceAppearance [SurfaceAppearance] {}
+  HumanoidRootPart [Part] {'Anchored': 'false', 'CanCollide': 'true'}
+    BoardPrompt [ProximityPrompt] {}
+  Humanoid [Humanoid] {}
+  Rifle [MeshPart] {'Anchored': 'false', 'CanCollide': 'false'}
+    SurfaceAppearance [SurfaceAppearance] {}
+    GatlingRotor [MeshPart] {'Anchored': 'false', 'CanCollide': 'false'}
+      SurfaceAppearance [SurfaceAppearance] {}
+      GatlingBarrels [MeshPart] {'Anchored': 'false', 'CanCollide': 'false'}
+        WeldConstraint [WeldConstraint] {}
+    GatlingSpin [Motor6D] {'Part0': 'Rifle', 'Part1': 'GatlingRotor'}
+    Muzzle [Attachment] {}
+      FlashLight [PointLight] {}
+    HeatFx [Attachment] {}
+      HeatLight [PointLight] {}
+      HeatSmoke [ParticleEmitter] {}
+    BeltIn [Attachment] {}
+    AmmoBelt [Beam] {}
+    Grip [Motor6D] {'Part0': 'LowerArmR', 'Part1': 'Rifle'}
+  RifleStowed [MeshPart] {'Anchored': 'false', 'CanCollide': 'false'}
+    SurfaceAppearance [SurfaceAppearance] {}
+    WeldConstraint [WeldConstraint] {}
+  Saber [Folder] {}
+    InHand [Folder] {}
+      AxeRod [MeshPart] {'Anchored': 'false', 'CanCollide': 'false'}
+        SurfaceAppearance [SurfaceAppearance] {}
+        BladeBase [Attachment] {}
+        BladeTip [Attachment] {}
+        SaberTrail [Trail] {}
+        AxeLightAtt [Attachment] {}
+          SaberLight [PointLight] {}
+      AxeBlade [MeshPart] {'Anchored': 'false', 'CanCollide': 'false'}
+        SurfaceAppearance [SurfaceAppearance] {}
+        AxeJoint [Motor6D] {'Part0': 'AxeRod', 'Part1': 'AxeBlade'}
+      AxeBladeEdge [MeshPart] {'Anchored': 'false', 'CanCollide': 'false'}
+        AxeJoint [Motor6D] {'Part0': 'AxeRod', 'Part1': 'AxeBladeEdge'}
+      AxeBladeCore [MeshPart] {'Anchored': 'false', 'CanCollide': 'false'}
+        AxeJoint [Motor6D] {'Part0': 'AxeRod', 'Part1': 'AxeBladeCore'}
+      AxeHook [MeshPart] {'Anchored': 'false', 'CanCollide': 'false'}
+        SurfaceAppearance [SurfaceAppearance] {}
+        AxeJoint [Motor6D] {'Part0': 'AxeRod', 'Part1': 'AxeHook'}
+      AxeSpear [MeshPart] {'Anchored': 'false', 'CanCollide': 'false'}
+        SurfaceAppearance [SurfaceAppearance] {}
+        AxeJoint [Motor6D] {'Part0': 'AxeRod', 'Part1': 'AxeSpear'}
+      AxeSpearEdge [MeshPart] {'Anchored': 'false', 'CanCollide': 'false'}
+        AxeJoint [Motor6D] {'Part0': 'AxeRod', 'Part1': 'AxeSpearEdge'}
+    Holster [Folder] {}
+      AxeStowed [MeshPart] {'Anchored': 'false', 'CanCollide': 'false'}
+        SurfaceAppearance [SurfaceAppearance] {}
+        WeldConstraint [WeldConstraint] {}
+  AmmoBox [MeshPart] {'Anchored': 'false', 'CanCollide': 'false'}
+    BeltOut [Attachment] {}
+  GrappleL [MeshPart] {'Anchored': 'false', 'CanCollide': 'false'}
+    SurfaceAppearance [SurfaceAppearance] {}
+    GrappleWeld [Weld] {'Part0': 'LowerArmL', 'Part1': 'GrappleL'}
+    GrappleHeadJoint [Motor6D] {'Part0': 'GrappleL', 'Part1': 'GrappleHead'}
+  GrappleHead [MeshPart] {'Anchored': 'false', 'CanCollide': 'false'}
+    SurfaceAppearance [SurfaceAppearance] {}

@@ -1,0 +1,84 @@
+HorkosTemplate [Model] {}
+  Pelvis [MeshPart] {'Anchored': 'false', 'CanCollide': 'false'}
+    SurfaceAppearance [SurfaceAppearance] {}
+    Root [Motor6D] {'Part0': 'HumanoidRootPart', 'Part1': 'Pelvis'}
+  Torso [MeshPart] {'Anchored': 'false', 'CanCollide': 'false'}
+    SurfaceAppearance [SurfaceAppearance] {}
+    Waist [Motor6D] {'Part0': 'Pelvis', 'Part1': 'Torso'}
+    NozzleDL [Attachment] {}
+      Flame [ParticleEmitter] {}
+    NozzleDR [Attachment] {}
+      Flame [ParticleEmitter] {}
+    NozzleUL [Attachment] {}
+      Flame [ParticleEmitter] {}
+    NozzleUR [Attachment] {}
+      Flame [ParticleEmitter] {}
+    BoostLightAtt [Attachment] {}
+      BoostLight [PointLight] {}
+  Head [MeshPart] {'Anchored': 'false', 'CanCollide': 'false'}
+    SurfaceAppearance [SurfaceAppearance] {}
+    Neck [Motor6D] {'Part0': 'Torso', 'Part1': 'Head'}
+  ShoulderPadL [MeshPart] {'Anchored': 'false', 'CanCollide': 'false'}
+    SurfaceAppearance [SurfaceAppearance] {}
+    PadL [Motor6D] {'Part0': 'Torso', 'Part1': 'ShoulderPadL'}
+  ShoulderPadR [MeshPart] {'Anchored': 'false', 'CanCollide': 'false'}
+    SurfaceAppearance [SurfaceAppearance] {}
+    PadR [Motor6D] {'Part0': 'Torso', 'Part1': 'ShoulderPadR'}
+  UpperArmL [MeshPart] {'Anchored': 'false', 'CanCollide': 'false'}
+    SurfaceAppearance [SurfaceAppearance] {}
+    ShoulderL [Motor6D] {'Part0': 'Torso', 'Part1': 'UpperArmL'}
+  UpperArmR [MeshPart] {'Anchored': 'false', 'CanCollide': 'false'}
+    SurfaceAppearance [SurfaceAppearance] {}
+    ShoulderR [Motor6D] {'Part0': 'Torso', 'Part1': 'UpperArmR'}
+  LowerArmL [MeshPart] {'Anchored': 'false', 'CanCollide': 'false'}
+    SurfaceAppearance [SurfaceAppearance] {}
+    ElbowL [Motor6D] {'Part0': 'UpperArmL', 'Part1': 'LowerArmL'}
+    SaberGrip [Motor6D] {'Part0': 'LowerArmL', 'Part1': 'SaberHilt'}
+  LowerArmR [MeshPart] {'Anchored': 'false', 'CanCollide': 'false'}
+    SurfaceAppearance [SurfaceAppearance] {}
+    ElbowR [Motor6D] {'Part0': 'UpperArmR', 'Part1': 'LowerArmR'}
+  UpperLegL [MeshPart] {'Anchored': 'false', 'CanCollide': 'false'}
+    SurfaceAppearance [SurfaceAppearance] {}
+    HipL [Motor6D] {'Part0': 'Pelvis', 'Part1': 'UpperLegL'}
+  UpperLegR [MeshPart] {'Anchored': 'false', 'CanCollide': 'false'}
+    SurfaceAppearance [SurfaceAppearance] {}
+    HipR [Motor6D] {'Part0': 'Pelvis', 'Part1': 'UpperLegR'}
+  LowerLegL [MeshPart] {'Anchored': 'false', 'CanCollide': 'false'}
+    SurfaceAppearance [SurfaceAppearance] {}
+    KneeL [Motor6D] {'Part0': 'UpperLegL', 'Part1': 'LowerLegL'}
+  LowerLegR [MeshPart] {'Anchored': 'false', 'CanCollide': 'false'}
+    SurfaceAppearance [SurfaceAppearance] {}
+    KneeR [Motor6D] {'Part0': 'UpperLegR', 'Part1': 'LowerLegR'}
+  FootL [MeshPart] {'Anchored': 'false', 'CanCollide': 'false'}
+    SurfaceAppearance [SurfaceAppearance] {}
+    AnkleL [Motor6D] {'Part0': 'LowerLegL', 'Part1': 'FootL'}
+  FootR [MeshPart] {'Anchored': 'false', 'CanCollide': 'false'}
+    SurfaceAppearance [SurfaceAppearance] {}
+    AnkleR [Motor6D] {'Part0': 'LowerLegR', 'Part1': 'FootR'}
+  HumanoidRootPart [Part] {'Anchored': 'false', 'CanCollide': 'true'}
+    BoardPrompt [ProximityPrompt] {}
+  Humanoid [Humanoid] {}
+  Rifle [MeshPart] {'Anchored': 'false', 'CanCollide': 'false'}
+    Muzzle [Attachment] {}
+      FlashLight [PointLight] {}
+    SurfaceAppearance [SurfaceAppearance] {}
+    Grip [Motor6D] {'Part0': 'LowerArmR', 'Part1': 'Rifle'}
+  Saber [Folder] {}
+    InHand [Folder] {}
+      SaberHilt [Part] {'Anchored': 'false', 'CanCollide': 'false'}
+      SaberBlade [Part] {'Anchored': 'false', 'CanCollide': 'false'}
+        WeldConstraint [WeldConstraint] {}
+        BladeBase [Attachment] {}
+        BladeTip [Attachment] {}
+        SaberTrail [Trail] {}
+        SaberLight [PointLight] {}
+      SaberGlow [Part] {'Anchored': 'false', 'CanCollide': 'false'}
+        WeldConstraint [WeldConstraint] {}
+      SaberNozzle [Part] {'Anchored': 'false', 'CanCollide': 'false'}
+        WeldConstraint [WeldConstraint] {}
+      SaberPommel [Part] {'Anchored': 'false', 'CanCollide': 'false'}
+        WeldConstraint [WeldConstraint] {}
+    Holster [Folder] {}
+  RifleStowed [MeshPart] {'Anchored': 'false', 'CanCollide': 'false'}
+    SurfaceAppearance [SurfaceAppearance] {}
+    WeldConstraint [WeldConstraint] {}
