@@ -108,6 +108,7 @@ end
 
 -- ---------- 자동 측정 ----------
 local results = {}
+local resultText = nil   -- 자동 측정이 끝나면 패널에 전체 표를 띄운다(폰에서 캡처용)
 local function runAuto()
 	if busy then return end
 	busy = true; bAuto.Text = "측정 중…"
@@ -134,6 +135,13 @@ local function runAuto()
 	end
 	table.insert(lines, "=====")
 	print(table.concat(lines, string.char(10)))
+	-- 패널용 짧은 표(폭 330px 안에 들어가게)
+	local short = { "── 결과 (" .. platform() .. ") ──", "대수  평균/저점   CPU   GPU" }
+	for _, r in ipairs(results) do
+		table.insert(short, ("%2d  %4.1f/%4.1f  %5.1f %5.1f"):format(r.n, r.avg, r.low, r.cpu, r.gpu))
+	end
+	table.insert(short, flags)
+	resultText = table.concat(short, string.char(10))
 	busy = false; bAuto.Text = "자동 측정"
 end
 bAuto = button("자동 측정", 7, function() task.spawn(runAuto) end)
@@ -145,7 +153,10 @@ task.spawn(function()
 		local window = recent; recent = {}
 		local avg, low = summarize(window)
 		local lastLine = ""
-		if #results > 0 then
+		if resultText and not busy then
+			lastLine = string.char(10) .. resultText
+		end
+		if #results > 0 and busy then
 			local r = results[#results]
 			lastLine = ("\n마지막 단계: %d대 · %.1f / %.1f FPS"):format(r.n, r.avg, r.low)
 		end
