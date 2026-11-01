@@ -17,10 +17,21 @@ local folder = workspace:WaitForChild("StressMechs")
 -- ---------- 프레임 기록 ----------
 local recent = {}          -- 최근 1초 dt(화면 표시용)
 local recording = nil      -- 자동 측정 중 dt 목록
+local cpuRec, gpuRec = nil, nil
 RunService.RenderStepped:Connect(function(dt)
 	table.insert(recent, dt)
-	if recording then table.insert(recording, dt) end
+	if recording then
+		table.insert(recording, dt)
+		table.insert(cpuRec, statMs("RenderCPUFrameTime"))
+		table.insert(gpuRec, statMs("RenderGPUFrameTime"))
+	end
 end)
+local function mean(list)
+	if not list or #list == 0 then return -1 end
+	local s = 0
+	for _, v in ipairs(list) do s += v end
+	return s / #list
+end
 
 local function summarize(list)
 	if #list == 0 then return 0, 0, 0 end
@@ -33,6 +44,12 @@ local function summarize(list)
 end
 
 local function memMB() return math.floor(Stats:GetTotalMemoryUsageMb()) end
+-- 프레임마다 실제로 쓴 시간(60 FPS 상한과 상관없음). 속성이 없는 버전이면 -1
+local function statMs(name)
+	local ok, v = pcall(function() return Stats[name] end)
+	if ok and type(v) == "number" then return v end
+	return -1
+end
 local function pingMS() return math.floor(player:GetNetworkPing() * 1000) end
 
 -- ---------- 화면 ----------
@@ -100,18 +117,19 @@ local function runAuto()
 		local t0 = os.clock()
 		while count() ~= n and os.clock() - t0 < 5 do task.wait(0.1) end
 		task.wait(WARMUP)
+		cpuRec, gpuRec = {}, {}
 		recording = {}
 		task.wait(MEASURE)
 		local rec = recording; recording = nil
 		local avg, low, ms = summarize(rec)
-		local r = { n = count(), avg = avg, low = low, ms = ms, mem = memMB(), srv = folder:GetAttribute("ServerFPS") or 0, ping = pingMS() }
+		local r = { n = count(), avg = avg, low = low, ms = ms, cpu = mean(cpuRec), gpu = mean(gpuRec), mem = memMB(), srv = folder:GetAttribute("ServerFPS") or 0, ping = pingMS() }
 		table.insert(results, r)
-		print(("[MechStress] 기체 %2d | FPS 평균 %5.1f · 1%%저점 %5.1f · %5.1fms | 메모리 %dMB | 서버 %4.1f | 핑 %dms"):format(r.n, r.avg, r.low, r.ms, r.mem, r.srv, r.ping))
+		print(("[MechStress] 기체 %2d | FPS 평균 %5.1f · 1%%저점 %5.1f · %5.1fms | CPU %5.2fms · GPU %5.2fms | 메모리 %dMB | 서버 %4.1f | 핑 %dms"):format(r.n, r.avg, r.low, r.ms, r.cpu, r.gpu, r.mem, r.srv, r.ping))
 	end
 	local lines = { ("===== MechStress 결과 (%s · %s · 단계마다 %ds 측정) ====="):format(platform(), flags, MEASURE),
-		"기체 | FPS평균 | 1%저점 | 프레임ms | 메모리MB | 서버FPS | 핑ms" }
+		"기체 | FPS평균 | 1%저점 | 프레임ms | CPUms | GPUms | 메모리MB | 서버FPS | 핑ms" }
 	for _, r in ipairs(results) do
-		table.insert(lines, ("%4d | %7.1f | %6.1f | %8.1f | %8d | %7.1f | %4d"):format(r.n, r.avg, r.low, r.ms, r.mem, r.srv, r.ping))
+		table.insert(lines, ("%4d | %7.1f | %6.1f | %8.1f | %5.2f | %5.2f | %8d | %7.1f | %4d"):format(r.n, r.avg, r.low, r.ms, r.cpu, r.gpu, r.mem, r.srv, r.ping))
 	end
 	table.insert(lines, "=====")
 	print(table.concat(lines, string.char(10)))
@@ -130,9 +148,9 @@ task.spawn(function()
 			local r = results[#results]
 			lastLine = ("\n마지막 단계: %d대 · %.1f / %.1f FPS"):format(r.n, r.avg, r.low)
 		end
-		info.Text = ("기체 %d대 · %s%s\nFPS %.1f (저점 %.1f)\n메모리 %dMB · 핑 %dms · 서버 %.1f%s"):format(
+		info.Text = ("기체 %d대 · %s%s\nFPS %.1f (저점 %.1f) · CPU %.2fms · GPU %.2fms\n메모리 %dMB · 핑 %dms · 서버 %.1f%s"):format(
 			count(), platform(), busy and " · 자동 측정 중" or "",
-			avg, low, memMB(), pingMS(), folder:GetAttribute("ServerFPS") or 0, lastLine)
+			avg, low, statMs("RenderCPUFrameTime"), statMs("RenderGPUFrameTime"), memMB(), pingMS(), folder:GetAttribute("ServerFPS") or 0, lastLine)
 		flagColor(bWalk, folder:GetAttribute("Walk")); flagColor(bFire, folder:GetAttribute("Fire")); flagColor(bAim, folder:GetAttribute("Aim"))
 	end
 end)
