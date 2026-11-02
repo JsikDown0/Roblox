@@ -24,7 +24,7 @@ PX, PZ0, PZ1, PY = 24, 172, 230, 30          # 세로 배관 |x| · 아래 · �
 SIG_Z = 199                                  # 태엽 / 밸브 중심 높이
 
 
-def build_back(M, sig="key"):
+def build_back(M, sig="valve", twin=True):
     B = M.part("Back", (-44, 14, 160), (45, 60, 266), pivot=(0, 24, 200), parent="Torso")
     G = B.g(); X, Y, Z = G
     # 받침판(짙은 쇠, 선체 등에 붙음)
@@ -40,23 +40,24 @@ def build_back(M, sig="key"):
         B.add(cyl(G, "z", (s * PX, PY - 3), 6.5, rng=(PZ0 - 2, PZ0 + 1)), 3)   # 아래 받침 고리
     B.add(cyl(G, "x", (PY - 3, PZ1), 5, rng=(-PX, PX)), 3)
     B.add(cyl(G, "x", (PY - 3, PZ1), 6.2, rng=(-3, 3)), 5)                     # 가운데 황동 이음
-    # C 오른쪽(−x) 기둥 위 작은 통: 청록 + 황동 띠 2 + 뒤로 향한 발광 창(1칸 오목)
-    cx_, cy_ = -PX, PY - 3
-    B.add(cyl(G, "z", (cx_, cy_), 9, rng=(PZ1 + 3, PZ1 + 22)), 1)
-    for z0 in (PZ1 + 3, PZ1 + 20):
-        B.add(cyl(G, "z", (cx_, cy_), 10, rng=(z0, z0 + 2)), 5)
-    B.add(cyl(G, "z", (cx_, cy_), 6, rng=(PZ1 + 23, PZ1 + 24)), 3)
-    win = box(G, x=(cx_ - 4, cx_ + 4), y=(cy_ + 6, cy_ + 10), z=(PZ1 + 8, PZ1 + 16))
-    B.cut(win & (Y >= cy_ + 9)); B.paint(win & (Y >= cy_ + 8), 6)
-    # L 왼쪽(+x) 기둥 위 철창 등불 하나: 황동 받침 → 발광 유리 → 세로 창살 4 + 위 갓
-    lx, ly, lz = PX, PY - 3, PZ1 + 12
-    B.add(cyl(G, "z", (lx, ly), 6.5, rng=(PZ1 + 3, PZ1 + 5)), 5)
-    B.add(ell(G, (lx, ly, lz), (4.5, 4.5, 6)), 6)
-    for k in range(4):
-        a = np.pi / 4 + k * np.pi / 2
-        bx, by = lx + 5.5 * np.cos(a), ly + 5.5 * np.sin(a)
-        B.add(cyl(G, "z", (bx, by), 1.1, rng=(PZ1 + 5, lz + 7)), 5)
-    B.add(cyl(G, "z", (lx, ly), 6.5, rng=(lz + 7, lz + 8)) | cyl(G, "z", (lx, ly), 3, rng=(lz + 9, lz + 10)), 5)
+    # 양쪽 기둥 위 철창 등불 [결정 11-02 "머리 양옆 발광 파츠 하나로 통일 — 왼쪽 등불로"] (오른쪽 작은 통 → 등불)
+    for s_ in ((1, -1) if twin else (1,)):
+        lx, ly, lz = s_ * PX, PY - 3, PZ1 + 12
+        B.add(cyl(G, "z", (lx, ly), 6.5, rng=(PZ1 + 3, PZ1 + 5)), 5)
+        B.add(ell(G, (lx, ly, lz), (4.5, 4.5, 6)), 6)
+        for k in range(4):
+            a = np.pi / 4 + k * np.pi / 2
+            bx, by = lx + 5.5 * np.cos(a), ly + 5.5 * np.sin(a)
+            B.add(cyl(G, "z", (bx, by), 1.1, rng=(PZ1 + 5, lz + 7)), 5)
+        B.add(cyl(G, "z", (lx, ly), 6.5, rng=(lz + 7, lz + 8)) | cyl(G, "z", (lx, ly), 3, rng=(lz + 9, lz + 10)), 5)
+    if not twin:   # (r11 첫 판) 오른쪽 작은 통 + 발광 창
+        cx_, cy_ = -PX, PY - 3
+        B.add(cyl(G, "z", (cx_, cy_), 9, rng=(PZ1 + 3, PZ1 + 22)), 1)
+        for z0 in (PZ1 + 3, PZ1 + 20):
+            B.add(cyl(G, "z", (cx_, cy_), 10, rng=(z0, z0 + 2)), 5)
+        B.add(cyl(G, "z", (cx_, cy_), 6, rng=(PZ1 + 23, PZ1 + 24)), 3)
+        win = box(G, x=(cx_ - 4, cx_ + 4), y=(cy_ + 6, cy_ + 10), z=(PZ1 + 8, PZ1 + 16))
+        B.cut(win & (Y >= cy_ + 9)); B.paint(win & (Y >= cy_ + 8), 6)
     # 가운데 시그니처: 황동 받침 고리 + 축(뒤로) + 태엽 날개 / 밸브 바퀴(등에 나란히 섬)
     B.add(cyl(G, "y", (0, SIG_Z), 10, rng=(25, 29)) & ~cyl(G, "y", (0, SIG_Z), 6, rng=(28, 29)), 5)
     B.add(cyl(G, "y", (0, SIG_Z), 6, rng=(25, 28)), 3)
@@ -85,10 +86,10 @@ def build_back(M, sig="key"):
     return B
 
 
-def build_all(sig="key"):
+def build_all(sig="valve", twin=True):
     M = r10.build_all("a")
     hd.head_3(M, deco=False)
-    build_back(M, sig)
+    build_back(M, sig, twin)
     return M
 
 
@@ -99,8 +100,8 @@ if __name__ == "__main__":
     import check_model
     f = ImageFont.truetype('/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc', 22)
     rows = []
-    for sig, name in (("key", "A 태엽 손잡이"), ("valve", "B 밸브 핸들")):
-        M = build_all(sig)
+    for sig, twin, name in (("valve", False, "전: 등불 + 통"), ("valve", True, "후: 등불 2 통일")):
+        M = build_all(sig, twin)
         print("==", name); check_model.check(M)
         Bk = M.blocks()
         up = M.blocks(skip=[n for n in M.parts if n not in ("Torso", "Head", "ShoulderL", "ShoulderR", "Back", "UpperArmL", "UpperArmR", "Pelvis")])
