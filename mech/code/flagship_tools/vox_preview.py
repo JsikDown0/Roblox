@@ -132,7 +132,9 @@ def _gather(groups, d, k):
 
 
 def render(blocks, palette, emissive=(), yaw=0, pitch=8, ppc=3.0, ss=2, size=None, bg=(13, 14, 17),
-           light=(-0.55, -0.75, 0.85), samples=None, bloom=1.0, shadow=True, outline=True, ground=True, ao_amt=0.55):
+           light=(-0.55, -0.75, 0.85), samples=None, bloom=1.0, shadow=True, outline=True, ground=True, ao_amt=0.55,
+           metal=None):
+    """metal = {색 번호: 금속도 0~1} — 금속 재질 미리보기(반사 + 하이라이트 근사). 없으면 예전과 똑같음."""
     groups = _groups(blocks)
     d, f, r, u = _basis(yaw, pitch)
     k = samples or int(np.ceil(ppc * ss * 1.25)) + 1
@@ -183,6 +185,16 @@ def render(blocks, palette, emissive=(), yaw=0, pitch=8, ppc=3.0, ss=2, size=Non
     light_amt = (0.20 + 0.14 * sky) * aof + 0.95 * lam * sh * (0.75 + 0.25 * aof) + 0.18 * np.clip(n @ fill, 0, 1) * aof
     rim = np.clip(1 - np.abs(n @ d), 0, 1) * 0.0
     shade = base * light_amt[:, None] + rim[:, None]
+    if metal:
+        V = d / np.linalg.norm(d)
+        Rv = 2 * (n @ V)[:, None] * n - V[None, :]
+        env = 0.04 + 2.6 * np.clip(Rv @ L, 0, 1) ** 3 + 0.5 * np.clip(Rv[:, 2], 0, 1) ** 2
+        Hh = L + V; Hh /= np.linalg.norm(Hh)
+        spec = np.clip(n @ Hh, 0, 1) ** 12 * sh * 1.6
+        mshade = base * (0.15 * light_amt + env * aof * (0.45 + 0.55 * sh))[:, None] + spec[:, None] * (0.6 * base + 0.2)
+        for kk, mv in metal.items():
+            mk = col == int(kk)
+            shade[mk] = (1 - mv) * shade[mk] + mv * mshade[mk]
     em = np.isin(col, list(emissive))
     shade[em] = base[em] * 1.35
 
