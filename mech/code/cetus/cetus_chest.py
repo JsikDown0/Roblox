@@ -55,17 +55,22 @@ def chest_1(M):
         bolt_y(T, G, bx, bz, -29.5)
 
 
-def chest_2(M):
+def chest_2(M, hw=11, z0=184, z1=199, n=4, lcol=5, lit=None, hood_w=16, frame_c=3):
+    """보일러 화구. hw = 입 반너비, z0~z1 = 입 높이, n = 가로 날개 수, lcol = 날개 색,
+    lit = 빛나는 틈 번호(아래부터, None = 전부), hood_w = 갓 반너비."""
     T = M.parts["Torso"]; G = T.g(); X, Y, Z = G
     _clear(T, G)
-    T.add(cbox(G, (-14, 14), (-29, -24), (182, 201), {"xz": 3}), 3)                     # 화구 틀(짙은 쇠)
-    hood = cbox(G, (-16, 16), (-34, -24), (200, 208), {"xz": 3, "-y-z": (6, 5), "-y+z": 2})
-    T.add(hood, 5)                                                                        # 비스듬한 황동 갓
-    mouth = box(G, x=(-11, 11), y=(-30, -26), z=(184, 199))
-    T.cut(mouth)
-    T.add(box(G, x=(-11, 11), y=(-25, -25), z=(184, 199)), 6)                            # 안쪽 벽 발광
-    for zc in (198, 194, 190, 186):
-        T.add(box(G, x=(-11, 11), y=(-28, -26), z=(zc - 1, zc)), 5)                      # 가로 날개 4(2칸)
+    T.add(cbox(G, (-hw - 3, hw + 3), (-29, -24), (z0 - 2, z1 + 2), {"xz": 3}), frame_c)          # 화구 틀
+    hood = cbox(G, (-hood_w, hood_w), (-33, -24), (z1 + 1, z1 + 8), {"xz": 3, "-y-z": (5, 5), "-y+z": 2})
+    T.add(hood, 5)                                                                                # 비스듬한 황동 갓
+    T.cut(box(G, x=(-hw, hw), y=(-30, -26), z=(z0, z1)))
+    T.add(box(G, x=(-hw, hw), y=(-25, -25), z=(z0, z1)), 3)                                       # 안쪽 벽(짙은 쇠)
+    step = (z1 - z0 + 1) / float(n)
+    for i in range(n):                                                                            # 날개 사이 틈 i(아래부터)
+        zb = int(round(z0 + i * step)); zt = int(round(z0 + (i + 1) * step)) - 1
+        T.add(box(G, x=(-hw, hw), y=(-28, -26), z=(zt - 1, zt)), lcol)                            # 날개(틈 위)
+        if lit is None or i in lit:
+            T.add(box(G, x=(-hw, hw), y=(-25, -25), z=(zb, zt - 2)), 6)
 
 
 def chest_3(M):
@@ -84,7 +89,11 @@ def chest_3(M):
         T.groove(box(G, x=(-7, 7), y=(-27, -25), z=(zc, zc)), 4)                          # 환기 홈 3
 
 
-VARIANTS = [("0", "지금", None), ("1", "압력 해치 테", chest_1), ("2", "보일러 화구", chest_2), ("3", "아치 처마 + 죔쇠", chest_3)]
+VARIANTS = [("0", "지금", None), ("1", "압력 해치 테", chest_1), ("2", "보일러 화구", chest_2), ("3", "아치 처마 + 죔쇠", chest_3),
+            # 유저 11-02 "2가 나쁘진 않은데 크고 화려해서 얼굴보다도 눈에 띄어" → 줄인 안
+            ("2a", "작게(폭 3/4 · 날개 3)", lambda M: chest_2(M, hw=8, z0=187, z1=197, n=3, hood_w=12)),
+            ("2b", "어둡게(짙은 날개 · 빛 1줄)", lambda M: chest_2(M, lcol=3, lit=(0,))),
+            ("2c", "작게 + 어둡게", lambda M: chest_2(M, hw=8, z0=187, z1=197, n=3, lcol=3, lit=(0,), hood_w=12))]
 
 
 def build_all(which="0"):
@@ -104,7 +113,10 @@ if __name__ == "__main__":
     f = ImageFont.truetype('/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc', 22)
     keep = ("Torso", "Head", "Pelvis", "ShoulderL", "ShoulderR", "UpperArmL", "UpperArmR")
     cols = []
+    sel = sys.argv[2].split(",") if len(sys.argv) > 2 else [v[0] for v in VARIANTS]
     for key, label, fn in VARIANTS:
+        if key not in sel:
+            continue
         M = build_all(key)
         T = M.parts["Torso"]; _, k = ndimage.label(T.a > 0)
         print(key, "Torso tris", 2 * greedy_quads(T.a), "섬", k - 1)
@@ -114,9 +126,10 @@ if __name__ == "__main__":
         cols.append((key + " " + label, a, b))
     ha = max(t[1].height for t in cols); hb = max(t[2].height for t in cols)
     wcol = max(max(t[1].width, t[2].width) for t in cols)
-    sh = Image.new("RGB", ((wcol + 16) * 2, 2 * (ha + hb + 70)), (18, 19, 22)); d = ImageDraw.Draw(sh)
+    nc = 2 if len(cols) == 4 else len(cols)
+    sh = Image.new("RGB", ((wcol + 16) * nc, ((len(cols) + nc - 1) // nc) * (ha + hb + 70)), (18, 19, 22)); d = ImageDraw.Draw(sh)
     for i, (lab, a, b) in enumerate(cols):
-        x = (i % 2) * (wcol + 16); y = (i // 2) * (ha + hb + 70)
+        x = (i % nc) * (wcol + 16); y = (i // nc) * (ha + hb + 70)
         d.text((x + 8, y + 6), lab, fill=(230, 230, 230), font=f)
         sh.paste(a, (x, y + 40)); sh.paste(b, (x, y + 50 + ha))
-    sh.save(os.path.join(out, "cetus_chest_compare.png")); print(sh.size)
+    sh.save(os.path.join(out, "cetus_chest_compare_%s.png" % "-".join(sel))); print(sh.size)
