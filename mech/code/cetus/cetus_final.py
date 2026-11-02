@@ -52,9 +52,10 @@ def bridge_islands(p, max_cells=400):
         d2 = ((sample[:, None, :] - main_pts[None, ::7, :]) ** 2).sum(-1)
         a_i, b_i = np.unravel_index(np.argmin(d2), d2.shape)
         a, b = sample[a_i].astype(float), main_pts[::7][b_i].astype(float)
-        L = int(np.ceil(np.abs(b - a).max())) + 1
-        for t in np.linspace(0, 1, L * 2):
-            q = np.round(a + (b - a) * t).astype(int)
+        q = a.astype(int).copy(); b = b.astype(int)
+        while (q != b).any():                                           # 한 번에 한 축씩 걸어 면으로 이어지게(6방향 연결)
+            ax = int(np.argmax(np.abs(b - q)))
+            q[ax] += np.sign(b[ax] - q[ax])
             if p.a[tuple(q)] == 0:
                 p.a[tuple(q)] = c
         n += 1
@@ -69,6 +70,22 @@ def split(M, src, dst, mask_fn, pivot=None, parent=None):
     q = M.part(dst, tuple(p.lo), tuple(p.hi), pivot or p.pivot, parent or src)
     q.a[m] = p.a[m]
     p.a[m] = 0
+    # 나누면서 떨어져 나간 조각은 붙어 있던 쪽으로 되돌림(섬 방지): 각 파트의 본체가 아닌 조각 → 상대 파트
+    for _ in range(3):
+        moved = False
+        for A, B in ((q, p), (p, q)):
+            lab, k = ndimage.label(A.a > 0)
+            if k <= 1:
+                continue
+            main = int(np.argmax(np.bincount(lab.ravel())[1:])) + 1
+            for i in range(1, k + 1):
+                if i == main:
+                    continue
+                comp = lab == i
+                if (ndimage.binary_dilation(comp) & (B.a > 0)).any():      # 상대 파트에 닿아 있을 때만 옮김
+                    B.a[comp] = A.a[comp]; A.a[comp] = 0; moved = True
+        if not moved:
+            break
     p.trim(); q.trim()
     return q
 
@@ -90,7 +107,6 @@ def build_all():
     # 1) 섬 잇기
     for n in ("ShoulderL", "LowerArmL"):
         bridge_islands(M.parts[n])
-    M.mirror("ShoulderL", "ShoulderR", "Torso") if False else None     # 어깨는 좌우 비대칭이라 거울 안 함
     # 2) 나누기
     dx = r12.SHIN_X
     split(M, "LowerArmR", "DrillR", lambda G: G[2] <= 125, pivot=(fv_cx(), 0, 125))
@@ -102,6 +118,8 @@ def build_all():
     split(M, "Torso", "Collar", lambda G: G[2] >= 216, pivot=(0, 0, 220))
     for s in ("L", "R"):
         split(M, "Shoulder" + s, "ShoulderBase" + s, lambda G: G[2] <= 206)
+    for p in M.parts.values():                                          # 나누며 생긴 섬까지 다시 잇기
+        bridge_islands(p)
     return M
 
 
@@ -138,5 +156,9 @@ if __name__ == "__main__":
     out = sys.argv[1] if len(sys.argv) > 1 else "."
     M = build_all()
     report(M)
+    for n, p in M.parts.items():
+        lab, k = ndimage.label(p.a > 0)
+        if k > 1:
+            print("  섬", n, sorted(np.bincount(lab.ravel())[1:].tolist())[:-1])
     M.save(os.path.join(out, "cetus_final.json"))
     print("저장:", os.path.join(out, "cetus_final.json"))
