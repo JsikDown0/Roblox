@@ -111,7 +111,7 @@ def head_3(M, spike_z=None, ant=None):
     if ant is None:
         spikes(H, G, spike_z or wz, y0=-6)                                 # 유저 11-02: 목가리개에 묻힘 → 위로 옮겨 비교
     else:
-        antenna(H, G, c, **ant)                                            # 유저 11-02: 못 지우고 한쪽에 짧은 피뢰침
+        (thin_antenna if ant.pop("thin", False) else antenna)(H, G, c, **ant)   # 유저 11-02: 못 지우고 한쪽에 짧은 피뢰침
     H.trim()
 
 
@@ -144,6 +144,21 @@ def build_all(which="0"):
     return M
 
 
+def thin_antenna(H, G, c, x0=-11, y0=2, h=28, t=1, bars=3, half=6, slope=0.22, gap=6, col=7, bar_col=None):
+    """얇은 피뢰침(유저 11-02 "훨씬 간단하고 얇게, 멀리서 생선 가시처럼"): 받침·애자 없음.
+    막대 단면 t×t 칸, 가로 막대 1칸 굵기(그림 왼쪽 = 기체 오른쪽이 높고 반대쪽으로 처짐)."""
+    X, Y, Z = G
+    zs = c[2] + 17 * np.sqrt(max(0.0, 1 - (x0 / 20.0) ** 2 - ((y0 - c[1]) / 19.0) ** 2))
+    zb, zt = int(round(zs)) - 3, int(round(zs)) + h
+    H.add(box(G, x=(x0, x0 + t - 1), y=(y0, y0 + t - 1), z=(zb, zt)), col)
+    xm = x0 + (t - 1) / 2.0
+    for i in range(bars):
+        zc = zt - 4 - gap * i
+        u = X - xm
+        zz = zc - np.round(slope * u + 0.02 * u * u)                       # 끝으로 갈수록 살짝 더 처짐(가시)
+        H.add((np.abs(u) <= half) & (Z == zz) & (Y >= y0) & (Y <= y0 + t - 1), bar_col or col)
+
+
 def spike_sheet(out):
     """3안 확정 뒤: 관자놀이 못 높이 비교(상반신만)."""
     from PIL import Image, ImageDraw, ImageFont
@@ -152,22 +167,24 @@ def spike_sheet(out):
     up = ("Torso", "Head", "ShoulderL", "ShoulderR", "UpperArmL", "UpperArmR")
     M = r10.build_all("a")
     cols = []
-    opts = [("A 오른쪽(드릴 쪽)", dict(x0=-11)), ("B 왼쪽(집게 쪽)", dict(x0=11, slope=-0.22)),
-            ("C 오른쪽 뒤 · 길게", dict(x0=-10, y0=7, h=34, gap=8, half=7))]
+    opts = [("a 1칸 · 강철", dict(thin=True, t=1, col=7)), ("b 1칸 · 짙은 쇠", dict(thin=True, t=1, col=3)),
+            ("c 막대 2칸 + 가시 1칸 · 길게", dict(thin=True, t=2, h=34, gap=7, half=7, col=3, bar_col=7))]
     for lab, ant in opts:
         head_3(M, ant=ant)
         U = M.blocks(skip=[n for n in M.parts if n not in up])
         a = vp.render(U, PAL, EMISSIVE, yaw=-30, pitch=8, ppc=4.0, ss=2, ao_amt=0.5, metal=METAL)
         b = vp.render(U, PAL, EMISSIVE, yaw=0, pitch=4, ppc=4.0, ss=2, ao_amt=0.5, metal=METAL)
+        far = vp.render(M.blocks(), PAL, EMISSIVE, yaw=-20, pitch=4, ppc=1.0, ss=2, ao_amt=0.5, metal=METAL)
+        b.paste(far, (b.width - far.width, b.height - far.height))
         cols.append((lab, a, b))
     ha = max(t[1].height for t in cols); wcol = max(max(t[1].width, t[2].width) for t in cols)
     hb = max(t[2].height for t in cols)
     sh = Image.new("RGB", ((wcol + 16) * len(cols), ha + hb + 60), (18, 19, 22)); d = ImageDraw.Draw(sh)
     for i, (lab, a, b) in enumerate(cols):
         x = i * (wcol + 16)
-        d.text((x + 8, 6), "피뢰침 " + lab, fill=(230, 230, 230), font=f)
+        d.text((x + 8, 6), "얇은 피뢰침(오른쪽) " + lab, fill=(230, 230, 230), font=f)
         sh.paste(a, (x, 40)); sh.paste(b, (x, 50 + ha))
-    sh.save(os.path.join(out, "cetus_head3_antenna.png")); print(sh.size)
+    sh.save(os.path.join(out, "cetus_head3_antenna_thin.png")); print(sh.size)
 
 
 if __name__ == "__main__":
