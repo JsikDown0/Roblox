@@ -96,7 +96,7 @@ def head_2(M):
     H.trim()
 
 
-def head_3(M):
+def head_3(M, spike_z=None):
     H, G, X, Y, Z = new_head(M)
     c, wz = (0, -1, 236), 235
     H.add(ell(G, c, (20, 19, 17)) & (Z >= 220), 1)
@@ -108,7 +108,7 @@ def head_3(M):
     gor = (d <= 26.25) & (d > 21) & (Y >= -15) & (Z >= 219) & (Z <= 232 + 0.4 * (Y + 15))
     H.add(gor, 1)
     H.paint(gor & (Z >= 230 + 0.4 * (Y + 15)), 5)
-    spikes(H, G, wz, y0=-6)
+    spikes(H, G, spike_z or wz, y0=-6)                                     # 유저 11-02: 목가리개에 묻힘 → 위로 옮겨 비교
     H.trim()
 
 
@@ -121,8 +121,34 @@ def build_all(which="0"):
     return M
 
 
+def spike_sheet(out):
+    """3안 확정 뒤: 관자놀이 못 높이 비교(상반신만)."""
+    from PIL import Image, ImageDraw, ImageFont
+    import vox_preview as vp
+    f = ImageFont.truetype('/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc', 22)
+    up = ("Torso", "Head", "ShoulderL", "ShoulderR", "UpperArmL", "UpperArmR")
+    M = r10.build_all("a")
+    cols = []
+    for sz, lab in ((235, "지금 z235(묻힘)"), (240, "+5칸 z240"), (243, "+8칸 z243"), (246, "+11칸 z246")):
+        head_3(M, sz)
+        U = M.blocks(skip=[n for n in M.parts if n not in up])
+        a = vp.render(U, PAL, EMISSIVE, yaw=-30, pitch=8, ppc=4.0, ss=2, ao_amt=0.5, metal=METAL)
+        b = vp.render(U, PAL, EMISSIVE, yaw=0, pitch=4, ppc=4.0, ss=2, ao_amt=0.5, metal=METAL)
+        cols.append((lab, a, b))
+    ha = max(t[1].height for t in cols); wcol = max(max(t[1].width, t[2].width) for t in cols)
+    hb = max(t[2].height for t in cols)
+    sh = Image.new("RGB", ((wcol + 16) * len(cols), ha + hb + 60), (18, 19, 22)); d = ImageDraw.Draw(sh)
+    for i, (lab, a, b) in enumerate(cols):
+        x = i * (wcol + 16)
+        d.text((x + 8, 6), "3 묻힌 철창 · 못 " + lab, fill=(230, 230, 230), font=f)
+        sh.paste(a, (x, 40)); sh.paste(b, (x, 50 + ha))
+    sh.save(os.path.join(out, "cetus_head3_spikes.png")); print(sh.size)
+
+
 if __name__ == "__main__":
     out = sys.argv[1] if len(sys.argv) > 1 else "."
+    if len(sys.argv) > 2 and sys.argv[2] == "spikes":
+        spike_sheet(out); sys.exit()
     from PIL import Image, ImageDraw, ImageFont
     import vox_preview as vp
     from scipy import ndimage
@@ -147,3 +173,4 @@ if __name__ == "__main__":
         d.text((x + 8, 6), lab, fill=(230, 230, 230), font=f)
         sh.paste(a, (x, 40)); sh.paste(b, (x, 40 + ha + 10)); sh.paste(c, (x + (wcol - c.width) // 2, 40 + ha + hb + 20))
     sh.save(os.path.join(out, "cetus_heads_compare.png")); print(sh.size)
+
