@@ -1,4 +1,4 @@
-"""HT-02 CETUS — 헬멧·가슴 r3 (2026-11-02) — r2b 채택 + 관자놀이 뾰족 못 + 가슴 뼈색 판을 붓선 같은 곡선 띠로(유저 11-02). 아래는 r2 설명 — r1 + A3 를 "약간 솟은 목 보호대"로(유저 11-02 "머리띠나 후드가 되니까 이상"). VARIANT="b" = r2b(코르셋 받침·뼈색 판 키움·멍에 한 단·호스 굵게)
+"""HT-02 CETUS — 헬멧·가슴 r3 (2026-11-02) — r2b 채택 + 관자놀이 뾰족 못 + 가슴 뼈색 판을 꺾인 < 판으로(유저 11-02). 아래는 r2 설명 — r1 + A3 를 "약간 솟은 목 보호대"로(유저 11-02 "머리띠나 후드가 되니까 이상"). VARIANT="b" = r2b(코르셋 받침·뼈색 판 키움·멍에 한 단·호스 굵게)
 
 기준 그림: mech/docs/레퍼런스/CETUS/concept_v1_GPT_후보.png (1순위)
 읽기 확인: mech/docs/레퍼런스/CETUS/윤곽읽기_r2_헬멧가슴.png + 결정기록 5-4
@@ -111,25 +111,11 @@ def build_torso(M):
     T.paint(top, 5)
     # B2 가슴 옆 뼈색 연 모양 판(좌우 대칭) — 선체 겉 1~2칸
     chest = T.a > 0
-    # B2 붓선 띠(좌우 대칭): 목깃 옆에서 시작 → 바깥으로 휨 → 멍에 쪽으로 다시 모임. 가운데 두껍고 양 끝 가늘게
-    X, Y, Z = G
-    ax = np.abs(X)
-    path = [(15, 216), (22, 209), (26, 198), (24, 187), (18, 179), (12, 175)]
-    seg = [(np.array(a, float), np.array(b, float)) for a, b in zip(path[:-1], path[1:])]
-    Ls = [np.linalg.norm(b - a) for a, b in seg]; Ltot = sum(Ls)
-    best = np.full(np.broadcast_shapes(X.shape, Y.shape, Z.shape), 1e9); tpar = np.zeros_like(best)
-    acc = 0.0
-    for (a, b), L in zip(seg, Ls):
-        d = b - a
-        t = np.clip(((ax - a[0]) * d[0] + (Z - a[1]) * d[1]) / (L * L), 0, 1)
-        dist = np.sqrt((ax - (a[0] + t * d[0])) ** 2 + (Z - (a[1] + t * d[1])) ** 2)
-        dist = np.broadcast_to(dist, best.shape); tt = np.broadcast_to((acc + t * L) / Ltot, best.shape)
-        upd = dist < best
-        best = np.where(upd, dist, best); tpar = np.where(upd, tt, tpar)
-        acc += L
-    width = 1.0 + 2.6 * np.sin(np.pi * tpar)                 # 반폭: 끝 1칸 → 가운데 3.6칸
-    stroke = (best <= width) & np.broadcast_to(Y < -6, best.shape)
-    near = dilate(chest, 2) & ~chest & fv.box(G, z=(172, 218))
+    # B2 꺾인 판(좌우 대칭, 유저 11-02 확대 그림): 목깃 옆 위 끝 → 바깥 꼭짓점에서 날카롭게 꺾임 → 아래로 길게 내려와 안쪽으로.
+    #   위 면 짧고 아래 면 길다(< 모양). 바깥 테두리와 안쪽 테두리가 나란한 일정 두께 띠, 양 끝은 비스듬히 자름.
+    chev = [(19, 218), (31, 203), (21, 178), (15, 181), (24, 203), (14, 216)]
+    stroke = fv.poly(G, "y", chev, rng=(-40, -6), sym=True)
+    near = dilate(chest, 2) & ~chest & fv.box(G, z=(172, 220))
     T.add(stroke & near, 2)
     # B3 처마(황동 띠, 앞으로 4칸) + B4 그 밑 그늘 속 가로 틈 코어
     T.add(fv.cbox(G, (-13, 13), (-31, -24), (199, 203), ch={"+z-y": 2}), 5)
