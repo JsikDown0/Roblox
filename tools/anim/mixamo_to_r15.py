@@ -1,6 +1,6 @@
 """Mixamo FBX -> Roblox R15 KeyframeSequence (Luau builder script) + preview render.
 
-Usage: python mixamo_to_r15.py <anim.fbx> <R15.obj> <out_dir> [name] [--render]
+Usage: python mixamo_to_r15.py <anim.fbx> <R15.obj> <out_dir> [name] [--render] [--loop] [--inplace] [--priority=Action|Movement|Idle|Core]
 - Retargets by world-space bone deltas with a rest-pose alignment per limb
   (Mixamo T-pose arms -> R15 arms-down rest), assumes default R15 Motor6D C0/C1
   with identity rotation (Rig Builder R15 dummy).
@@ -15,6 +15,9 @@ from mathutils import Matrix, Vector, Quaternion
 FBX, OBJ, OUT = os.path.abspath(sys.argv[1]), os.path.abspath(sys.argv[2]), os.path.abspath(sys.argv[3])
 NAME = sys.argv[4] if len(sys.argv) > 4 and not sys.argv[4].startswith("--") else os.path.splitext(os.path.basename(FBX))[0]
 RENDER = "--render" in sys.argv
+LOOP = "--loop" in sys.argv
+INPLACE = "--inplace" in sys.argv   # remove linear horizontal root travel (Mixamo "In Place" not ticked)
+PRIORITY = next((a.split("=", 1)[1] for a in sys.argv if a.startswith("--priority=")), "Action")
 os.makedirs(OUT, exist_ok=True)
 
 # Blender (x, y, z) Z-up, character faces -Y  ->  Roblox (x, y, z) Y-up, faces -Z
@@ -144,6 +147,15 @@ for f in range(f0, f1 + 1):
         T[n] = (rel.to_quaternion().normalized(), dpos if par is None else Vector((0, 0, 0)))
     frames.append(((f - f0) / fps, T, Rw, dpos))
 
+if INPLACE and len(frames) > 1:
+    d0, d1 = frames[0][3].copy(), frames[-1][3].copy()
+    n = len(frames) - 1
+    for i, (t, T, Rw, dpos) in enumerate(frames):
+        drift = (d1 - d0) * (i / n)
+        dpos = dpos - Vector((drift.x, 0, drift.z))
+        T["LowerTorso"] = (T["LowerTorso"][0], dpos)
+        frames[i] = (t, T, Rw, dpos)
+
 # ---------------------------------------------------------------- Luau
 def cf(q, p):
     return "CFrame.new(%.4f,%.4f,%.4f,%.5f,%.5f,%.5f,%.5f)" % (p.x, p.y, p.z, q.x, q.y, q.z, q.w)
@@ -160,7 +172,7 @@ L = [f"-- {NAME}: Mixamo -> R15 KeyframeSequence ({len(frames)} frames, {fps} fp
      "for _, o in ipairs(saves:GetChildren()) do if o:IsA('ObjectValue') and o.Value == rigModel then rig = o end end",
      "if not rig then rig = Instance.new('ObjectValue'); rig.Name = rigModel and rigModel.Name or 'Rig'; rig.Value = rigModel; rig.Parent = saves end",
      f"local old = rig:FindFirstChild('{NAME}'); if old then old:Destroy() end",
-     "local ks = Instance.new('KeyframeSequence'); ks.Name = '" + NAME + "'; ks.Loop = false; ks.Priority = Enum.AnimationPriority.Action",
+     "local ks = Instance.new('KeyframeSequence'); ks.Name = '" + NAME + "'; ks.Loop = " + ("true" if LOOP else "false") + "; ks.Priority = Enum.AnimationPriority." + PRIORITY,
      "local CHILD = {"]
 for k, v in CHILDREN.items():
     L.append(f"  {k} = {{{', '.join(repr(x) for x in v)}}},")
@@ -198,7 +210,7 @@ if RENDER:
     scn.render.resolution_x = 360; scn.render.resolution_y = 480; scn.view_settings.view_transform = "Standard"
     w = bpy.data.worlds.new("w"); scn.world = w; w.use_nodes = True
     w.node_tree.nodes["Background"].inputs["Color"].default_value = (0.6, 0.62, 0.68, 1)
-    cam = bpy.data.objects.new("cam", bpy.data.cameras.new("cam")); cam.data.type = "ORTHO"; cam.data.ortho_scale = 6.5
+    cam = bpy.data.objects.new("cam", bpy.data.cameras.new("cam")); cam.data.type = "ORTHO"; cam.data.ortho_scale = 8
     scn.collection.objects.link(cam); scn.camera = cam
     ctr = P.transposed() @ Vector((cx, ground + 2.6, part["UpperTorso"]["c"][2]))
     cam.location = ctr + Vector((-7, -9, 2)); cam.rotation_euler = (ctr - cam.location).to_track_quat("-Z", "Y").to_euler()
@@ -217,11 +229,11 @@ if RENDER:
             objs[n]["rb_pos"] = list(pos)
             M4 = (PT @ Rw[n] @ P).to_4x4(); M4.translation = PT @ pos
             objs[n].matrix_world = M4
-        fn = os.path.join(OUT, f"_f{i}.png"); scn.render.filepath = fn
+        fn = os.path.join(OUT, f"_{NAME}_f{i}.png"); scn.render.filepath = fn
         bpy.ops.render.render(write_still=True); tiles.append(Image.open(fn))
     W = sum(t.width for t in tiles); sheet = Image.new("RGB", (W, tiles[0].height))
     x = 0
     for t in tiles: sheet.paste(t, (x, 0)); x += t.width
     sheet.save(os.path.join(OUT, NAME + "_preview.png"))
-    for i in picks: os.remove(os.path.join(OUT, f"_f{i}.png"))
+    for i in picks: os.remove(os.path.join(OUT, f"_{NAME}_f{i}.png"))
     print("preview", os.path.join(OUT, NAME + "_preview.png"), "frames", picks)
