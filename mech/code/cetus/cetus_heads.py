@@ -25,7 +25,7 @@ PAL, EMISSIVE, METAL = r10.PAL, r10.EMISSIVE, r10.METAL
 
 def new_head(M):
     M.parts.pop("Head", None)
-    H = M.part("Head", (-34, -30, 212), (35, 30, 272), pivot=(0, -1, r3.NECK_Z), parent="Torso")
+    H = M.part("Head", (-34, -30, 212), (35, 30, 292), pivot=(0, -1, r3.NECK_Z), parent="Torso")
     G = H.g()
     return H, G, G[0], G[1], G[2]
 
@@ -96,7 +96,7 @@ def head_2(M):
     H.trim()
 
 
-def head_3(M, spike_z=None):
+def head_3(M, spike_z=None, ant=None):
     H, G, X, Y, Z = new_head(M)
     c, wz = (0, -1, 236), 235
     H.add(ell(G, c, (20, 19, 17)) & (Z >= 220), 1)
@@ -108,8 +108,31 @@ def head_3(M, spike_z=None):
     gor = (d <= 26.25) & (d > 21) & (Y >= -15) & (Z >= 219) & (Z <= 232 + 0.4 * (Y + 15))
     H.add(gor, 1)
     H.paint(gor & (Z >= 230 + 0.4 * (Y + 15)), 5)
-    spikes(H, G, spike_z or wz, y0=-6)                                     # 유저 11-02: 목가리개에 묻힘 → 위로 옮겨 비교
+    if ant is None:
+        spikes(H, G, spike_z or wz, y0=-6)                                 # 유저 11-02: 목가리개에 묻힘 → 위로 옮겨 비교
+    else:
+        antenna(H, G, c, **ant)                                            # 유저 11-02: 못 지우고 한쪽에 짧은 피뢰침
     H.trim()
+
+
+def antenna(H, G, c, x0, y0=2, h=26, bars=3, half=6, slope=0.22, gap=6):
+    """피뢰침(유저 스케치): 세로 막대 + 가로 막대 3개(왼쪽이 높고 오른쪽으로 처짐) + 막대 끝 황동 애자.
+    막대는 돔 표면에서 시작해 h 칸. 가로 막대는 위에서부터 gap 간격, 맨 위는 끝에서 4칸 아래."""
+    X, Y, Z = G
+    zs = c[2] + 17 * np.sqrt(max(0.0, 1 - (x0 / 20.0) ** 2 - ((y0 - c[1]) / 19.0) ** 2)) - 1   # 돔 표면 높이
+    zb, zt = int(round(zs)) - 2, int(round(zs)) + h
+    H.add(cyl(G, "z", (x0, y0), 3.2, rng=(zb, zb + 4)), 5)                   # 받침 황동 깃
+    H.add(cyl(G, "z", (x0, y0), 1.6, rng=(zb, zt)), 3)                       # 세로 막대(짙은 쇠)
+    H.add(cyl(G, "z", (x0, y0), 1.2, rng=(zt, zt + 2)), 7)                   # 끝 강철 침
+    for i in range(bars):
+        zc = zt - 4 - gap * i
+        u = X - x0
+        zz = zc - np.round(slope * u)                                        # 왼쪽(+X 쪽이 아니라 그림 왼쪽 = 기체 오른쪽) 높게
+        bar = (np.abs(u) <= half) & (Z >= zz) & (Z <= zz + 1) & (np.abs(Y - y0) <= 1)
+        H.add(bar, 7)
+        for e in (-half, half):                                              # 애자(황동 알)
+            ze = zc - round(slope * e)
+            H.add(ell(G, (x0 + e, y0, ze + 0.5), (1.4, 1.4, 1.6)), 5)
 
 
 VARIANTS = [("0", "지금 r3b", head_0), ("1", "눈썹 처마 투구", head_1), ("2", "각진 투구", head_2), ("3", "묻힌 철창 투구", head_3)]
@@ -129,8 +152,10 @@ def spike_sheet(out):
     up = ("Torso", "Head", "ShoulderL", "ShoulderR", "UpperArmL", "UpperArmR")
     M = r10.build_all("a")
     cols = []
-    for sz, lab in ((235, "지금 z235(묻힘)"), (240, "+5칸 z240"), (243, "+8칸 z243"), (246, "+11칸 z246")):
-        head_3(M, sz)
+    opts = [("A 오른쪽(드릴 쪽)", dict(x0=-11)), ("B 왼쪽(집게 쪽)", dict(x0=11, slope=-0.22)),
+            ("C 오른쪽 뒤 · 길게", dict(x0=-10, y0=7, h=34, gap=8, half=7))]
+    for lab, ant in opts:
+        head_3(M, ant=ant)
         U = M.blocks(skip=[n for n in M.parts if n not in up])
         a = vp.render(U, PAL, EMISSIVE, yaw=-30, pitch=8, ppc=4.0, ss=2, ao_amt=0.5, metal=METAL)
         b = vp.render(U, PAL, EMISSIVE, yaw=0, pitch=4, ppc=4.0, ss=2, ao_amt=0.5, metal=METAL)
@@ -140,9 +165,9 @@ def spike_sheet(out):
     sh = Image.new("RGB", ((wcol + 16) * len(cols), ha + hb + 60), (18, 19, 22)); d = ImageDraw.Draw(sh)
     for i, (lab, a, b) in enumerate(cols):
         x = i * (wcol + 16)
-        d.text((x + 8, 6), "3 묻힌 철창 · 못 " + lab, fill=(230, 230, 230), font=f)
+        d.text((x + 8, 6), "피뢰침 " + lab, fill=(230, 230, 230), font=f)
         sh.paste(a, (x, 40)); sh.paste(b, (x, 50 + ha))
-    sh.save(os.path.join(out, "cetus_head3_spikes.png")); print(sh.size)
+    sh.save(os.path.join(out, "cetus_head3_antenna.png")); print(sh.size)
 
 
 if __name__ == "__main__":
