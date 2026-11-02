@@ -96,7 +96,7 @@ def head_2(M):
     H.trim()
 
 
-def head_3(M, spike_z=None, ant=None):
+def head_3(M, spike_z=None, ant=None, deco=True):
     H, G, X, Y, Z = new_head(M)
     c, wz = (0, -1, 236), 235
     H.add(ell(G, c, (20, 19, 17)) & (Z >= 220), 1)
@@ -108,7 +108,10 @@ def head_3(M, spike_z=None, ant=None):
     gor = (d <= 26.25) & (d > 21) & (Y >= -15) & (Z >= 219) & (Z <= 232 + 0.4 * (Y + 15))
     H.add(gor, 1)
     H.paint(gor & (Z >= 230 + 0.4 * (Y + 15)), 5)
-    if ant is None:
+    H.add(cyl(G, "z", (0, -1), 22, rng=(219, 221)) & ~(H.a > 0), 3)        # 목 바닥 고리: 돔과 목가리개를 이음(섬 방지)
+    if not deco:
+        pass                                                               # [결정 11-02] 머리 장식 없음
+    elif ant is None:
         spikes(H, G, spike_z or wz, y0=-6)                                 # 유저 11-02: 목가리개에 묻힘 → 위로 옮겨 비교
     else:
         (thin_antenna if ant.pop("thin", False) else antenna)(H, G, c, **ant)   # 유저 11-02: 못 지우고 한쪽에 짧은 피뢰침
