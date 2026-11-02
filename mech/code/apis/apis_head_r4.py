@@ -24,9 +24,11 @@ PAL = dict(r1.PAL); PAL[8] = (92, 122, 130)          # 8 = 마스크 회청색(�
 EMISSIVE = r1.EMISSIVE
 # 원본 픽셀 영역 [유저 표시를 원본 좌표로 옮김: 정면 패널 3.14배 · 원점 (222,130)]
 VISOR_F = [(245, 197), (262, 201), (277, 204), (292, 201), (309, 197), (308, 207), (296, 216), (277, 221), (258, 216), (246, 207)]   # 띠 두께 ≈ 원본 발광 띠(가운데 17px → 끝 10px)
-MASK_F = [(232, 206), (246, 213), (258, 222), (277, 226), (296, 222), (308, 213), (320, 205), (318, 222), (306, 240), (292, 249),
+MASK_F = [(232, 204), (246, 206), (258, 215), (277, 220), (296, 215), (308, 206), (320, 203),   # r5: 위 끝 = 바이저 아래 끝(사이 노랑 줄 없앰)
+          (318, 222), (306, 240), (292, 249),
           (262, 249), (248, 240), (236, 224)]
-WHITE_F = [(256, 163), (298, 163), (305, 176), (301, 197), (277, 200), (253, 197), (249, 176)]
+WHITE_F = [(253, 163), (301, 163), (301, 199), (292, 201), (277, 204), (262, 201), (253, 199)]   # r5: 좌우 폭 일정
+CHIN_F = [(258, 228), (298, 228), (298, 249), (258, 249)]                                          # r5: 가운데 턱판(더 튀어나옴)
 VENT_F = [(271, 184), (285, 184), (285, 190), (271, 190)]
 NOSE_S = [(610, 176), (622, 168), (640, 158), (664, 146), (668, 152), (645, 166), (632, 178), (630, 196), (612, 194)]
 VISOR_S = [(616, 184), (632, 182), (652, 186), (656, 200), (646, 210), (626, 208), (618, 198)]
@@ -39,7 +41,7 @@ def build_head(M, s=1.3):
     pm = lambda pts: h3.poly_mask((Wd, Hd), pts)
     fm, sm = pm(h3.FRONT), pm(h3.SIDE)
     R = {n: pm(p) for n, p in (("vis", VISOR_F), ("mask", MASK_F), ("white", WHITE_F), ("vent", VENT_F),
-                                ("nose", NOSE_S), ("viss", VISOR_S), ("masks", MASK_S))}
+                                ("nose", NOSE_S), ("viss", VISOR_S), ("masks", MASK_S), ("chin", CHIN_F))}
     k = 0.319 * s
     H = M.part("Head", (-26, -30, 212), (27, 24, 268 + int(12 * s)), pivot=(0, -2, r1.NECK_Z), parent="Torso")
     G = H.g(); shp = H.a.shape
@@ -60,6 +62,21 @@ def build_head(M, s=1.3):
                     top=~P[1:-1, 1:-1, 2:] & f, bot=~P[1:-1, 1:-1, :-2] & f, back=~P[1:-1, 2:, 1:-1] & f)
     # 마스크 2칸 돋움(정면 영역 기둥 안 빈칸 → 앞·옆·아래로 감쌈)
     H.emboss(F("mask") & ~F("vis"), 8, h=2)
+    # 가운데 턱판: 마스크 앞면(기둥마다 가장 앞 칸)에서 2칸 더 앞으로 내밈 + 테두리 홈
+    chin2 = F("chin")[:, 0, :]                                                    # (x, z) 기둥
+    filled = H.a > 0
+    anyf = filled.any(1)
+    front_j = np.where(anyf, filled.argmax(1), -1)
+    for i, kz in np.argwhere(chin2 & anyf):
+        j = front_j[i, kz]
+        for d_ in (1, 2):
+            if j - d_ >= 0:
+                H.a[i, j - d_, kz] = 8
+    rim = chin2 & anyf & ~ndimage.binary_erosion(chin2 & anyf)
+    for i, kz in np.argwhere(rim):
+        j = front_j[i, kz]
+        if j - 2 >= 0:
+            H.a[i, j - 2, kz] = 4                                                 # 판 테두리 = 짙은 홈 색
     # 바이저: 정면 바이저 영역 앞면을 2칸 파냄
     for _ in range(2):
         fc = faces()
@@ -68,14 +85,15 @@ def build_head(M, s=1.3):
     # 색: 속 = 짙은, 겉 = 방향별 영역
     filled = H.a > 0
     col = np.full(shp, 1, np.uint8)
-    side_c = np.where(S("nose"), 2, np.where(S("viss"), 6, np.where(S("masks"), 8, 1)))
+    side_c = np.where(S("nose"), 2, np.where(S("masks"), 8, 1))                   # r5: 옆 바이저 잔재 뺌
     front_c = np.where(F("vis"), 6, np.where(F("mask"), 8, np.where(F("vent"), 3, np.where(F("white"), 2, 1))))
-    top_c = np.where((np.abs(Xb) <= 12 * s * 0.319 / 0.319 * 0.32 * 3.1) & S("nose") | (np.abs(Xb) <= 4 * s) & (pxs < 650), 2, 1)
+    top_c = np.ones(shp, np.uint8)                                                # r5: 윗면 흰 띠 뺌(전부 노랑)
     col = np.where(fc["side"], side_c, col)
     col = np.where(fc["top"], top_c, col)
     col = np.where(fc["front"], front_c, col)
     col = np.where(fc["bot"] & ~fc["front"], 3, col)
     col = np.where(H.a == 8, 8, col)                                              # 돋운 마스크 칸은 그대로
+    col = np.where(H.a == 4, 4, col)                                              # 턱판 테두리 홈 그대로
     surf = fc["front"] | fc["side"] | fc["top"] | fc["bot"] | fc["back"]
     H.a[filled] = np.where(surf, col, 3)[filled]
     # 바이저 안쪽 면 = Visor 파트(청록 앞면 칸)
