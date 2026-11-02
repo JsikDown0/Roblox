@@ -20,7 +20,11 @@ from flag_vox import cbox, box  # noqa: E402
 import cetus_r3 as r3  # noqa: E402
 import cetus_r12 as r12  # noqa: E402
 
-PAL, EMISSIVE, METAL = r12.PAL, r12.EMISSIVE, r12.METAL
+PAL, EMISSIVE, METAL = dict(r12.PAL), r12.EMISSIVE, r12.METAL
+# 10 = 가슴 궁극기 줄: 평소 검은 줄, 궁극기 때 호박색 발광 [결정 11-02 "중앙 발광 코어를 없애고 얇은 검은 줄 두 개가 궁극기 때 빛나게"]
+PAL[10] = (18, 19, 21)
+PAL_ULT = dict(PAL); PAL_ULT[8] = (255, 186, 84); PAL_ULT[10] = (255, 186, 84)
+EMISSIVE_ULT = {6, 8, 10}
 
 
 def _hull(G):
@@ -89,11 +93,24 @@ def chest_3(M):
         T.groove(box(G, x=(-7, 7), y=(-27, -25), z=(zc, zc)), 4)                          # 환기 홈 3
 
 
+def chest_4(M, mode="v"):
+    """코어 없앰. mode v = 원래 있던 세로 검은 홈 2줄(x ±11)이 궁극기 줄 · h = 코어 자리에 가는 가로 홈 2줄."""
+    T = M.parts["Torso"]; G = T.g(); X, Y, Z = G
+    _clear(T, G)
+    if mode == "v":
+        T.paint(box(G, x=(11, 11), y=(-27, -18), z=(176, 216)) | box(G, x=(-11, -11), y=(-27, -18), z=(176, 216)), 10)
+    else:
+        for zc in (197, 191):
+            T.groove(box(G, x=(-8, 8), y=(-27, -24), z=(zc, zc)) & _hull(G), 10)
+
+
 VARIANTS = [("0", "지금", None), ("1", "압력 해치 테", chest_1), ("2", "보일러 화구", chest_2), ("3", "아치 처마 + 죔쇠", chest_3),
             # 유저 11-02 "2가 나쁘진 않은데 크고 화려해서 얼굴보다도 눈에 띄어" → 줄인 안
             ("2a", "작게(폭 3/4 · 날개 3)", lambda M: chest_2(M, hw=8, z0=187, z1=197, n=3, hood_w=12)),
             ("2b", "어둡게(짙은 날개 · 빛 1줄)", lambda M: chest_2(M, lcol=3, lit=(0,))),
-            ("2c", "작게 + 어둡게", lambda M: chest_2(M, hw=8, z0=187, z1=197, n=3, lcol=3, lit=(0,), hood_w=12))]
+            ("2c", "작게 + 어둡게", lambda M: chest_2(M, hw=8, z0=187, z1=197, n=3, lcol=3, lit=(0,), hood_w=12)),
+            ("4v", "코어 없음 · 세로 줄 2(기존 홈)", lambda M: chest_4(M, "v")),
+            ("4h", "코어 없음 · 가로 줄 2(코어 자리)", lambda M: chest_4(M, "h"))]
 
 
 def build_all(which="0"):
@@ -122,7 +139,11 @@ if __name__ == "__main__":
         print(key, "Torso tris", 2 * greedy_quads(T.a), "섬", k - 1)
         B = M.blocks(skip=[n for n in M.parts if n not in keep])
         a = vp.render(B, PAL, EMISSIVE, yaw=0, pitch=4, ppc=4.2, ss=2, ao_amt=0.5, metal=METAL)
-        b = vp.render(B, PAL, EMISSIVE, yaw=-30, pitch=8, ppc=4.2, ss=2, ao_amt=0.5, metal=METAL)
+        if key.startswith("4"):
+            b = vp.render(B, PAL_ULT, EMISSIVE_ULT, yaw=0, pitch=4, ppc=4.2, ss=2, ao_amt=0.5, metal=METAL)
+            label += " — 아래 = 궁극기"
+        else:
+            b = vp.render(B, PAL, EMISSIVE, yaw=-30, pitch=8, ppc=4.2, ss=2, ao_amt=0.5, metal=METAL)
         cols.append((key + " " + label, a, b))
     ha = max(t[1].height for t in cols); hb = max(t[2].height for t in cols)
     wcol = max(max(t[1].width, t[2].width) for t in cols)
