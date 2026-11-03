@@ -95,6 +95,19 @@ def palette_png(rgb_by_n, path, mask=False):
     Image.fromarray(img).save(path)
 
 
+def parts_of(M, names=("Torso", "Head")):
+    """여러 파트: 노드마다 피벗 기준 정점 + 월드 행렬(부모 없이 평평하게)."""
+    out = {}
+    for n in names:
+        p = M.parts[n]
+        V, Q, C = greedy_mesh(p.a, p.lo)
+        pv = np.array(p.pivot, float)
+        W = M.world(n)
+        mat = np.eye(4); mat[:3, :3] = W[:3, :3]; mat[:3, 3] = (W[:3, :3] @ pv + W[:3, 3]) * VOXF
+        out[n] = dict(parent=None, matrix=mat, verts=(V - pv) * VOXF, quads=Q, cols=C)
+    return out
+
+
 def head_parts(M):
     """머리 하나만: 정점 = 월드 칸 × VOXF (피벗 = 머리 관절)."""
     p = M.parts["Head"]
@@ -177,6 +190,11 @@ if __name__ == "__main__":
     palette_png(h2.PAL, pal)
     palette_png(h2.PAL, os.path.join(out, "MassPalette_EmitMask.png"), mask=True)
     for j in sel:
-        M = h5.build_all(j) if j in "ABCDE" else h4.build_all(j)
-        rep = write_glb(head_parts(M), pal, os.path.join(out, "Mass_Head_%s_20261103.glb" % j))
+        if j.startswith("chest3"):                                      # 가슴 r3 + 머리 A: chest3a, chest3b
+            import mass_chest_r3 as c3
+            M = c3.build_all(j[-1])
+            rep = write_glb(parts_of(M), pal, os.path.join(out, "Mass_Upper_r3%s_20261103.glb" % j[-1]))
+        else:
+            M = h5.build_all(j) if j in "ABCDE" else h4.build_all(j)
+            rep = write_glb(head_parts(M), pal, os.path.join(out, "Mass_Head_%s_20261103.glb" % j))
         print(j, rep)
