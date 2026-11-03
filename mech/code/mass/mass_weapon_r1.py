@@ -87,7 +87,7 @@ def stock_mask(a, b, c, kind="K0"):
         out[4] = (a >= -38) & (a <= -36) & (b >= 4) & (b <= 18) & (ac <= 4.5)                  # 고무 받침
     elif kind == "K2":                                                                       # 위·아래 막대 + 끝판(접이 경첩)
         top = (a >= -36) & (a < -14) & (b >= 15) & (b <= 18) & (ac <= 2.5)
-        bot = (a >= -36) & (a < -14) & (b >= 7 + np.clip(-14 - a, 0, None) * 0.1) & (b <= 10 + np.clip(-14 - a, 0, None) * 0.1) & (ac <= 2.5)
+        bot = (a >= -36) & (a < -14) & (b >= 7) & (b <= 10) & (ac <= 2.5)                       # [결정 11-03] 아래 막대 곧게(r2 는 끝으로 갈수록 올라감)
         butt = (a >= -39) & (a <= -36) & (b >= 6) & (b <= 19) & (ac <= 4)
         hinge = (a >= -16) & (a <= -13) & (b >= 6) & (b <= 19) & (ac <= 4.5)
         out[3] = top | bot | butt; out[7] = hinge
@@ -176,11 +176,14 @@ def hilt(M, name, parent, O, axis):
     P.trim()
 
 
-def build_all(saber="S2", stowed=False, thick=True, shield_yaw=0.0, stock="K0"):
+def build_all(saber="S2", stowed=False, thick=True, shield_yaw=0.0, stock="K2", both=False):
     M = MF.build_all()
     if thick:
         thicken(M)
     build_shield(M, shield_yaw)
+    if both:                                                                                 # 게임 템플릿용: 손 총 + 수납 총 둘 다(FELSEN 처럼 상태에 따라 하나만 보임)
+        place_rifle(M, "RifleStowed", "UpperLegR", (-50, 31, 134), (0, 0, -1), (0, -1, 0), stock)
+        stowed = False
     if stowed:
         place_rifle(M, "RifleStowed", "UpperLegR", (-50, 31, 134), (0, 0, -1), (0, -1, 0), stock)   # 1차 Y 13 은 늘어뜨린 손·아래팔과 겹침 → 허벅지 바깥 뒤쪽
     else:
