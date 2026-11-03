@@ -187,14 +187,15 @@ if __name__ == "__main__":
     sel = sys.argv[2].split(",") if len(sys.argv) > 2 else ["a", "c", "d"]
     os.makedirs(out, exist_ok=True)
     pal = os.path.join(out, "MassPalette.png")
-    palette_png(h2.PAL, pal)
-    palette_png(h2.PAL, os.path.join(out, "MassPalette_EmitMask.png"), mask=True)
+    PALX = dict(h2.PAL); PALX[8] = (196, 196, 184)                       # 8 = 흉판 모서리 흰 선(가슴 r5)
+    palette_png(PALX, pal)
+    palette_png(PALX, os.path.join(out, "MassPalette_EmitMask.png"), mask=True)
     for j in sel:
         if j.startswith("chest"):                                       # 가슴 rN + 머리 A: chest3a, chest4b …
             import importlib
             cm = importlib.import_module("mass_chest_r%s" % j[5])
-            M = cm.build_all(j[-1])
-            rep = write_glb(parts_of(M), pal, os.path.join(out, "Mass_Upper_r%s%s_20261103.glb" % (j[5], j[-1])))
+            M = cm.build_all(j[6:] if j[5] == "5" else j[-1])
+            rep = write_glb(parts_of(M), pal, os.path.join(out, "Mass_Upper_r%s%s_20261103.glb" % (j[5], j[6:])))
         else:
             M = h5.build_all(j) if j in "ABCDE" else h4.build_all(j)
             rep = write_glb(head_parts(M), pal, os.path.join(out, "Mass_Head_%s_20261103.glb" % j))
