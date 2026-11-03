@@ -13,6 +13,9 @@ r2: FELSEN 다리(final_m2b) 문법 — 다리 축 하나(X 22, 곧게)에 모�
   A  기둥형     곧은 다리, 정강이 아래로 조금 벌어짐(컨셉 비율)
   B  육중 정강이  허벅지 조금 좁게 + 정강이가 종 모양으로 크게 벌어지고 종아리 뒤로(무게가 아래)
   C  A자 벌림   A 를 고관절에서 4° 벌림(발은 바닥에 평평하게 되돌림) — 컨셉 정면의 벌린 자세
+  유저 r2 표시(11-03): ① 무릎 둥근 너클이 양쪽으로 아주 조금 더 튀어나오게 → 너클 바깥 끝 CX ± 14 → ± 16(정강이 폭 ±14 보다 2칸)
+     ② 골반부가 다 구현 안 됨(표시: 샅판 양옆 골반 블록) → 골반 옆 블록 = 고관절 위 각진 상자 X 15~34 · z156~174, 샅판과 4칸 띄움,
+        안쪽 앞 모서리 크게 깎아 앞면이 바깥을 향함 · 앞 2단 판 · 바깥 위 45° · 아래 짙은 띠 · Pelvis 에 고정. 허벅지 장갑 위 끝 z150(사이 짙은 틈).
 """
 import os
 import sys
@@ -39,7 +42,7 @@ ARM_SPLAY = {"UpperArmL": roty(-9), "UpperArmR": roty(9)}
 
 
 def build_pelvis(M):
-    P = M.part("Pelvis", (-24, -18, 140), (25, 16, 178), pivot=(0, 0, 160))
+    P = M.part("Pelvis", (-38, -20, 140), (39, 16, 178), pivot=(0, 0, 160))
     G = P.g(); X, Y, Z = G; ax = np.abs(X)
     P.add(cbox(G, (-18, 18), (-10, 11), (146, 175), {"xy": 3, "-zx": 4}), 3)                   # 짙은 골반 뼈대
     cr = cbox(G, (-11, 11), (-15, -8), (148, 174), {"-zx": (6, 10), "x-y": 2, "-z-y": (3, 4)})
@@ -47,6 +50,15 @@ def build_pelvis(M):
     P.emboss((ax <= 8) & (Z >= 153) & (Z <= 171) & (Y < -13), 1)                               # 2단 판
     P.groove(cyl(G, "y", (0, 163), 3.2) & (Y <= -13), 4)                                       # 둥근 구멍
     P.add(cbox(G, (-14, 14), (9, 14), (150, 172), {"x+y": 3}), 3)                             # 뒤 판(짙은)
+    for sg in (1, -1):                                                                        # 골반 옆 블록(고관절 위)
+        # 1차(X 10~34, 샅판에 붙음)는 샅판과 한 판으로 붙어 넓은 반바지처럼 보임 → 샅판과 4칸 띄우고(짙은 뼈대가 보임) 2칸 뒤로,
+        # 안쪽 앞 모서리를 크게 깎아 앞면이 바깥을 향함 · 허벅지 장갑 위 끝을 z150 으로 내려 사이에 짙은 틈
+        hb = cbox(G, sorted((sg * 15, sg * 34)), (-13, 9), (156, 174), {"xy": 3, "-z-y": 3})
+        hb &= ((sg * X - 15) + (Y + 13) >= 6)                                                  # 안쪽 앞 모서리 크게
+        hb &= (sg * X <= 34 - np.clip(Z - 169, 0, None))                                       # 바깥 위 45°
+        P.add(hb, 1)
+        P.emboss((sg * X >= 21) & (sg * X <= 31) & (Z >= 160) & (Z <= 170) & (Y < -12), 1)     # 앞 2단 판
+        P.paint(hb & (Z <= 157), 3)                                                           # 아래 짙은 띠
     P.trim()
     M.parts["Torso"].parent = "Pelvis"
 
@@ -58,16 +70,16 @@ def build_leg(M, v):
     G = U.g(); X, Y, Z = G
     U.add(ell(G, HIP, (10, 10, 10)), 3)                                                        # 고관절 공(장갑 속)
     U.add(cbox(G, (CX - 10, CX + 10), (-10, 10), (112, 150), {"xy": 3}), 3)                    # 짙은 뼈대
-    U.add(cbox(G, (CX - tw, CX + tw), (-15, 15), (121, 153), {"xy": 4, "+zx": 3, "+zy": 3, "-z-y": 3}), 1)
+    U.add(cbox(G, (CX - tw, CX + tw), (-15, 15), (121, 150), {"xy": 4, "+zx": 3, "+zy": 3, "-z-y": 3}), 1)
     U.add(cbox(G, (CX - tw + 4, CX + tw - 4), (-17, -15), (126, 149), {"x-y": 2, "-z-y": 2}), 1)   # 앞 데칼 판(2단)
     U.add(cbox(G, (CX - tw + 5, CX + tw - 5), (15, 17), (126, 147), {"x+y": 2}), 2)             # 뒤 판(짙은 쇠)
     U.rot = roty(-sp["splay"])
     U.trim()
     # ---- 정강이 + 무릎
-    L = M.part("LowerLegL", (-6, -30, 28), (52, 32, 128), pivot=KNEE, parent="UpperLegL")
+    L = M.part("LowerLegL", (-8, -30, 28), (54, 32, 128), pivot=KNEE, parent="UpperLegL")
     G = L.g(); X, Y, Z = G
     ky, kz = KNEE[1], KNEE[2]
-    for xa, xb in ((CX - 14, CX - 10), (CX + 10, CX + 14)):                                    # 둥근 너클(다리 폭 안, 옆에서 크게)
+    for xa, xb in ((CX - 16, CX - 10), (CX + 10, CX + 16)):                                    # 둥근 너클(정강이 폭보다 2칸 바깥)
         L.add(cyl(G, "x", (ky, kz), 8, rng=(xa, xb)), 3)
         xe = xa if xa < CX else xb
         L.groove(cyl(G, "x", (ky, kz), 8.5) & ~cyl(G, "x", (ky, kz), 5.5) & (X == xe), 4)
@@ -138,7 +150,7 @@ def overlaps(M, pose=None):
         p = M.parts[n]; T = M.world(n, pose); ijk = np.argwhere(p.a > 0) + p.lo
         return set(map(tuple, np.round(ijk @ T[:3, :3].T + T[:3, 3]).astype(int)))
     legs = cells("UpperLegL") | cells("LowerLegL")
-    return {"손∩다리": len(cells("HandL") & legs), "아래팔∩다리": len(cells("LowerArmL") & legs),
+    return {"골반∩허벅지": len(cells("Pelvis") & cells("UpperLegL")), "손∩다리": len(cells("HandL") & legs), "아래팔∩다리": len(cells("LowerArmL") & legs),
             "정강이∩허벅지": len(cells("LowerLegL") & cells("UpperLegL")), "좌∩우 다리": len((cells("UpperLegL") | cells("LowerLegL") | cells("FootL")) & (cells("UpperLegR") | cells("LowerLegR") | cells("FootR")))}
 
 
