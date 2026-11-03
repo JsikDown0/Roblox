@@ -9,6 +9,9 @@ r2: 관절을 장갑 속에 숨김 — 위팔 장갑을 z190 까지 내려 팔�
   1차 렌더 [관찰]: c·d 는 반대로 관절이 아예 안 보여 위팔·아래팔이 한 기둥(소시지)처럼 읽힘.
   → e  중간: 관절이 보이되 팔 폭보다 2칸 안쪽으로 들어간 짙은 기계부(높이 6, 경첩 2마디 + 가운데 피스톤 막대) ·
        위팔 상자 끝 z196 / 아래팔 상자 시작 z189 · 아래팔이 위팔보다 앞뒤·바깥 2칸 굵음(단차로 따로 읽힘) · 손목 짙은 띠 3칸, 2칸 안쪽.
+  유저 e 평: "e 가 좋은데, 동그란 관절 연결부 외에도 직사각형 형태의 관절부가 같이 융합돼 있어" → [관찰: 메인·삼면도 팔꿈치 확대]
+     2축 경첩 — 위 축(위팔 끝) + 아래 축(아래팔 끝), 양옆 둥근 축 끝(너클) + 가운데 직사각 연결 블록 + 그 양옆 얇은 강철 테 링크판.
+  f  e + 2축 경첩(위 축 z195 · 아래 축 z188, 둥근 너클 4 + 가운데 직사각 블록 + 강철 링크판 2), 모두 팔 폭 안
   c  관절 숨김(그림)      d  c + 팔꿈치 바깥 덧판(위팔에서 내려온 짧은 팔꿈치 보호대 — 관절 바깥을 판으로)
 """
 import os
@@ -29,7 +32,7 @@ import mass_arm_r1 as a1  # noqa: E402
 
 PAL = h2.PAL
 SH, EL, WR = (31, -1, 223), (43, -1, 191), (42, -1, 155)
-NAMES = {"c": "c 관절 숨김", "d": "d c + 팔꿈치 바깥 덧판", "e": "e 안쪽으로 들어간 작은 관절"}
+NAMES = {"c": "c 관절 숨김", "d": "d c + 팔꿈치 바깥 덧판", "e": "e 안쪽으로 들어간 작은 관절", "f": "f e + 2축 경첩(직사각 블록)"}
 
 
 def small_shoulder_joint(M):
@@ -77,7 +80,7 @@ def build_arm(M, var="c"):
     return M
 
 
-def build_arm_e(M):
+def build_arm_e(M, hinge2=False):
     U = M.part("UpperArmL", (28, -16, 186), (58, 14, 224), pivot=SH, parent="Torso")
     G = U.g(); X, Y, Z = G
     U.add(cbox(G, (34, 52), (-9, 8), (196, 222), {"xy": 3, "-zx": 2, "-zy": 2}), 1)
@@ -85,15 +88,28 @@ def build_arm_e(M):
     U.trim()
     Lw = M.part("LowerArmL", (26, -18, 150), (62, 16, 198), pivot=EL, parent="UpperArmL")
     G = Lw.g(); X, Y, Z = G
-    for xa, xb in ((37, 41), (45, 49)):                                                      # 경첩 2마디(폭 안, 2칸 안쪽)
-        Lw.add(cyl(G, "x", (EL[1], EL[2]), 4, rng=(xa, xb)), 3)
-    Lw.add(cyl(G, "x", (EL[1], EL[2]), 2.5, rng=(36, 50)), 4)                                # 축
+    if hinge2:
+        # 1차(축 간격 7칸)는 납작한 띠처럼 보임 → 틈을 z184~197 로 넓히고 축을 앞뒤로 엇갈림(그림: 위 축 뒤, 아래 축 앞 — 대각선 링크)
+        for (yc_, zc_) in ((1.5, 194), (-2.5, 187)):
+            Lw.add(cyl(G, "x", (yc_, zc_), 2.5, rng=(36, 50)), 4)
+            for xa, xb in ((36, 39), (47, 50)):                                              # 둥근 너클(양옆)
+                Lw.add(cyl(G, "x", (yc_, zc_), 4.2, rng=(xa, xb)), 3)
+                Lw.groove(cyl(G, "x", (yc_, zc_), 4.6) & ~cyl(G, "x", (yc_, zc_), 2.8) & (X == (xa if xa < 43 else xb)), 4)
+        Lw.add(cbox(G, (40, 46), (-6, 4), (184, 197), {"yz": 2}), 3)                       # 가운데 직사각 연결 블록
+        Lw.groove((X >= 41) & (X <= 45) & (Y == -6) & ((Z == 189) | (Z == 192)), 4)
+        for x0 in (39, 47):                                                                  # 양옆 강철 테 링크판(위·아래 축을 잇는 비스듬한 판)
+            Lw.add(r1.seg(G, (x0, 1.5, 194), (x0, -2.5, 187), 2.6) & (X == x0), 7)
+    else:
+        for xa, xb in ((37, 41), (45, 49)):                                                  # 경첩 2마디(폭 안, 2칸 안쪽)
+            Lw.add(cyl(G, "x", (EL[1], EL[2]), 4, rng=(xa, xb)), 3)
+        Lw.add(cyl(G, "x", (EL[1], EL[2]), 2.5, rng=(36, 50)), 4)                            # 축
     Lw.add(r1.seg(G, (43, 3, 196), (43, 3, 186), 1.6), 7)                                   # 뒤 피스톤 막대(강철)
-    fr = [(32, 189), (54, 189), (54, 173), (50, 158), (35, 158), (32, 172)]
+    zt = 184 if hinge2 else 189
+    fr = [(32, zt), (54, zt), (54, 173), (50, 158), (35, 158), (32, 172)]
     fa = poly(G, "y", fr) & (Y <= 10) & (Y >= -12 + np.clip(184 - Z, 0, None) * 0.25)
-    fa &= cbox(G, (31, 55), (-12, 10), (157, 190), {"xy": 3, "+z-y": 2, "+zy": 2})
+    fa &= cbox(G, (31, 55), (-12, 10), (157, zt + 1), {"xy": 3, "+z-y": 2, "+zy": 2})
     Lw.add(fa, 1)
-    Lw.emboss((X >= 35) & (X <= 50) & (Z >= 167) & (Z <= 185) & (Y < -6), 1)
+    Lw.emboss((X >= 35) & (X <= 50) & (Z >= 167) & (Z <= zt - 4) & (Y < -6), 1)
     Lw.trim()
     Hd = M.part("HandL", (28, -16, 130), (58, 14, 160), pivot=WR, parent="LowerArmL")
     G = Hd.g(); X, Y, Z = G
@@ -113,10 +129,10 @@ def build_arm_e(M):
 
 
 def build_all(var="c", ws=0.88):
-    if var == "e":
+    if var in "ef":
         M = s3.build_all(ws)
         small_shoulder_joint(M)
-        return build_arm_e(M)
+        return build_arm_e(M, hinge2=(var == "f"))
     M = s3.build_all(ws)
     small_shoulder_joint(M)
     build_arm(M, var)
@@ -137,6 +153,8 @@ if __name__ == "__main__":
     mn = Image.open(os.path.join(Rr, "concept_v1_메인.png")).convert("RGB")
     bend = {"LowerArmL": rotx(-40), "LowerArmR": rotx(-40)}
     specs = [(0, 2, "정면", None), (-35, 8, "앞 3/4", None), (-90, 2, "옆", None), (150, 10, "뒤 3/4", None), (-60, 6, "팔꿈치 40° 굽힘", bend)]
+    if len(sys.argv) > 3:                                                                    # 팔꿈치 확대 보기
+        specs = [(0, 2, "정면", None), (-35, 8, "앞 3/4", None), (-90, 2, "옆", None), (150, 10, "뒤 3/4", None), (-60, 6, "팔꿈치 40° 굽힘", bend)]
     sel = sys.argv[2] if len(sys.argv) > 2 else "cd"
     rows = [("r1 a (전)", a1.build_all("a"))] + [(NAMES[v], build_all(v)) for v in sel]
     rend = []
