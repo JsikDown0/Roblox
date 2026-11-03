@@ -4,6 +4,9 @@
   A  아래팔 바깥 호스: 팔꿈치 밑 → 손목 위(아래팔 한 파트 안이라 팔이 움직여도 늘어나지 않음) — 정강이 호스와 짝
   B  등 → 어깨 호스: 등 상자 위 바깥 → 어깨 관절 뒤, 아치로 솟음(몸통 한 파트) — 게임 카메라(뒤)에서 늘 보임
   C  A + B
+  → [결정 11-03 "B 로 가자"] + 아치를 등 상자 높이(z245) 아래로 낮춘 판:
+  B1 낮은 아치: 등 상자 위 모서리 아래에서 나와 최고 z239(상자 윗면보다 6칸 아래)
+  B2 옆 따라: 등 상자 옆면에 붙어 나와 어깨 관절 뒤로, 최고 z234
 """
 import os
 import sys
@@ -20,7 +23,11 @@ import mass_leg_r4 as l4  # noqa: E402
 import mass_power_r1 as pw  # noqa: E402
 
 PAL, METAL = l4.PAL, l4.METAL
-NAMES = {"A": "A 아래팔 바깥 호스", "B": "B 등 → 어깨 호스", "C": "C A + B"}
+NAMES = {"A": "A 아래팔 바깥 호스", "B": "B 등 → 어깨 호스", "C": "C A + B",
+         "B1": "B1 낮은 아치(최고 z239)", "B2": "B2 등 상자 옆 따라(최고 z234)"}
+BACK = {"B": [(19, 27, 241), (24, 26, 249), (29, 19, 249), (31, 9, 236)],
+        "B1": [(21, 27, 233), (26, 26, 239), (30, 19, 239), (31, 9, 230)],
+        "B2": [(25, 24, 226), (28, 23, 233), (31, 16, 234), (31, 8, 228)]}
 
 
 def grow(P, lo, hi):
@@ -42,15 +49,15 @@ def hose(P, pts, r=1.8, clamp=True):
 def build_all(v="C", ws=0.88):
     M = l4.build_all(ws)
     pw.cover_pelvis_hole(M)
-    if v in "AC":
+    if v in ("A", "C"):
         L = M.parts["LowerArmL"]; grow(L, (28, -18, 150), (64, 14, 192))
         hose(L, [(54, 4, 183), (58, 6, 176), (58, 5.5, 166), (51, 2, 159)])
         M.parts.pop("LowerArmR"); M.mirror("LowerArmL", "LowerArmR", "UpperArmR")
         M.parts["HandR"].parent = "LowerArmR"
-    if v in "BC":
+    if v in ("B", "C", "B1", "B2"):
         T = M.parts["Torso"]; grow(T, (-40, -30, 165), (41, 42, 256))
         for s in (1, -1):
-            hose(T, [(s * 19, 27, 241), (s * 24, 26, 249), (s * 29, 19, 249), (s * 31, 9, 236)], r=2.0)
+            hose(T, [(s * x, y, z) for x, y, z in BACK["B" if v == "C" else v]], r=2.0)
     return M
 
 
@@ -65,7 +72,8 @@ if __name__ == "__main__":
     f = ImageFont.truetype(FN, 20); ft = ImageFont.truetype(FN, 26)
     AS = l2.ARM_SPLAY
     rows = []
-    for v in "ABC":
+    sel = sys.argv[2].split(",") if len(sys.argv) > 2 else list("ABC")
+    for v in sel:
         M = build_all(v)
         for pn in ("Torso", "LowerArmL", "Pelvis"):
             p = M.parts[pn]; _, k = ndimage.label(p.a > 0)
@@ -87,4 +95,4 @@ if __name__ == "__main__":
         d.text((16, y0 + H // 2 - 12), nm, fill=(255, 190, 90), font=f)
         for i, (t, im) in enumerate(ims):
             sh.paste(im, (x + (cols[i] - im.width) // 2, y0 + (H - im.height) // 2)); d.text((x + 6, y0 + H + 8), t, fill=(220, 220, 220), font=f); x += cols[i] + 16
-    p = os.path.join(out, "시안_상체호스r1.png"); sh.save(p); print(p, sh.size)
+    p = os.path.join(out, "시안_상체호스r1%s.png" % ("" if len(sys.argv) <= 2 else "_" + "_".join(sel))); sh.save(p); print(p, sh.size)
