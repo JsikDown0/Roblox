@@ -69,12 +69,46 @@ def _frame(P, O, a_, b_):
     return f(a_), f(b_), f(c_)
 
 
-def rifle_masks(a, b, c):
+STOCKS = {"K0": "K0 지금(고정식 · 작은 구멍)", "K1": "K1 각진 쐐기 + 볼받침 + 고무 받침", "K2": "K2 접이식 골격(위·아래 막대 + 끝판)",
+          "K3": "K3 신축식(버퍼 관 + 짧은 개머리)", "K4": "K4 두툼한 상자 + 옆 홈 2"}
+
+
+def stock_mask(a, b, c, kind="K0"):
+    ac = np.abs(c); out = {}
+    if kind == "K0":
+        st = (a >= -38) & (a < -14) & (b <= 19) & (b >= 7 + np.clip(-26 - a, 0, None) * 0.5) & (ac <= 4)
+        st &= ~((a >= -30) & (a <= -22) & (b >= 11) & (b <= 14) & (ac <= 4.5))
+        out[3] = st
+    elif kind == "K1":                                                                       # 아래가 비스듬한 꽉 찬 쐐기(45°), 위 볼받침, 끝 고무
+        st = (a >= -38) & (a < -14) & (b <= 18) & (b >= 6 + np.clip(-18 - a, 0, None) * 0.55) & (ac <= 4.5)
+        st &= (b <= 18 - np.clip(-34 - a, 0, None))
+        out[2] = st
+        out[1] = (a >= -32) & (a <= -20) & (b > 18) & (b <= 20) & (ac <= 3.5)                  # 볼받침(올리브)
+        out[4] = (a >= -38) & (a <= -36) & (b >= 4) & (b <= 18) & (ac <= 4.5)                  # 고무 받침
+    elif kind == "K2":                                                                       # 위·아래 막대 + 끝판(접이 경첩)
+        top = (a >= -36) & (a < -14) & (b >= 15) & (b <= 18) & (ac <= 2.5)
+        bot = (a >= -36) & (a < -14) & (b >= 7 + np.clip(-14 - a, 0, None) * 0.1) & (b <= 10 + np.clip(-14 - a, 0, None) * 0.1) & (ac <= 2.5)
+        butt = (a >= -39) & (a <= -36) & (b >= 6) & (b <= 19) & (ac <= 4)
+        hinge = (a >= -16) & (a <= -13) & (b >= 6) & (b <= 19) & (ac <= 4.5)
+        out[3] = top | bot | butt; out[7] = hinge
+    elif kind == "K3":                                                                       # 버퍼 관(원통) + 짧은 개머리가 끼움
+        tube = (a >= -34) & (a < -14) & ((b - 15) ** 2 + c ** 2 <= 2.6 ** 2 + 0.25)
+        cheek = (a >= -38) & (a <= -26) & (b >= 7) & (b <= 19) & (ac <= 4) & (b >= 7 + np.clip(a + 30, 0, None))
+        out[7] = tube; out[3] = cheek
+        out[4] = (a >= -38) & (a <= -37) & (b >= 7) & (b <= 19) & (ac <= 4)
+    elif kind == "K4":                                                                       # 두툼한 상자 + 옆 홈 2줄
+        st = (a >= -38) & (a < -14) & (b >= 6) & (b <= 19) & (ac <= 5) & ((a + 38) + (b - 6) >= 5) & ((a + 38) + (19 - b) >= 3)
+        out[2] = st
+        out[4] = st & (ac >= 4.5) & ((b == 10) | (b == 15)) & (a <= -18) & (a >= -34)
+    return out
+
+
+def rifle_masks(a, b, c, stock="K0"):
     """a = 앞(손잡이 0), b = 위(손잡이 쥔 점 0), c = 옆."""
     ac = np.abs(c); m = {}
     rec = (a >= -14) & (a <= 22) & (b >= 6) & (b <= 20) & (ac <= 5.5) & (b <= 20 - np.clip(a - 19, 0, None))
-    stock = (a >= -38) & (a < -14) & (b <= 19) & (b >= 7 + np.clip(-26 - a, 0, None) * 0.5) & (ac <= 4)
-    stock &= ~((a >= -30) & (a <= -22) & (b >= 11) & (b <= 14) & (ac <= 4.5))               # 개머리 가운데 작은 구멍(1차는 커서 갈고리처럼 보임)
+    sm = stock_mask(a, b, c, stock)
+    stock = np.zeros(np.broadcast_shapes(a.shape, b.shape, c.shape), bool)
     plate = (a >= -10) & (a <= 16) & (b >= 9) & (b <= 17) & (ac <= 6.5)
     rail = (a >= -12) & (a <= 48) & (b > 20) & (b <= 22) & (ac <= 2.5) & ~((b == 22) & (np.mod(np.round(a), 4) == 0))
     scope = (a >= -6) & (a <= 12) & (b > 22) & (b <= 28) & (ac <= 3.2)
@@ -90,28 +124,26 @@ def rifle_masks(a, b, c):
     barrel = (a > 54) & (a <= 64) & (rr <= 2.2 ** 2 + 0.25)
     brake = (a > 64) & (a <= 72) & (rr <= 3.2 ** 2 + 0.25) & ~(np.isin(np.round(a), (66, 69)) & (ac >= 2))
     bore = (a >= 71) & (rr <= 1.0)
-    for col, mm in ((3, stock), (2, rec), (1, plate), (3, rail), (3, scope), (4, lens), (3, mag), (3, grip),
-                    (2, guard), (4, vents), (3, fgrip), (7, barrel), (3, brake)):
+    for col, mm in [(k, v) for k, v in sm.items()] + [(2, rec), (1, plate), (3, rail), (3, scope), (4, lens), (3, mag), (3, grip),
+                    (2, guard), (4, vents), (3, fgrip), (7, barrel), (3, brake)]:
         m[col] = m.get(col, np.zeros(np.broadcast_shapes(a.shape, b.shape, c.shape), bool)) | np.broadcast_to(mm, np.broadcast_shapes(a.shape, b.shape, c.shape))
     return m, bore
 
 
-def place_rifle(M, name, parent, O, a_, b_):
+def place_rifle(M, name, parent, O, a_, b_, stock="K0"):
     O = np.asarray(O, float)
     P = M.part(name, tuple((O - 80).astype(int)), tuple((O + 80).astype(int)), pivot=tuple(O), parent=parent)
     a, b, c = _frame(P, O, a_, b_)
-    m, bore = rifle_masks(a, b, c)
+    m, bore = rifle_masks(a, b, c, stock)
     for col in (3, 2, 1, 4, 7):                                                              # 뒤에 칠한 색이 이김(올리브 판 > 몸통)
         if col in m:
             P.add(m[col], col)
-    for col in (1,):
-        P.paint(m[col] & ~m[2] | (m[1]), col)
     P.cut(bore)
     P.trim()
     return P
 
 
-def build_shield(M):
+def build_shield(M, yaw=0.0):
     ZC = 158                                                                                  # 1차 z172 는 어깨판(z≈200 아래 끝)과 겹쳐 한 장처럼 이어 보임 → 아래로
     P = M.part("Shield", (40, -30, 118), (66, 28, 200), pivot=(56, -1, ZC), parent="LowerArmL")
     G = P.g(); X, Y, Z = G
@@ -125,6 +157,9 @@ def build_shield(M):
     P.add(poly(G, "x", inner) & (X == 61), 2)                                                # 바깥 2단 판(데칼 면)
     P.add(cbox(G, (52, 56), (-7, 5), (160, 184), {"xy": 1}), 3)                              # 받침(아래팔 바깥에 붙음)
     P.add(cyl(G, "y", (54, 178), 2.4, rng=(-9, 7)), 7)                                       # 받침 핀
+    if yaw:
+        from flag_vox import rotz
+        P.pivot = (54.0, -1.0, float(ZC)); P.rot = rotz(-yaw)                                 # 바깥 면을 앞쪽으로 yaw° 돌림
     P.trim()
 
 
@@ -141,17 +176,17 @@ def hilt(M, name, parent, O, axis):
     P.trim()
 
 
-def build_all(saber="S1", stowed=False, thick=True):
+def build_all(saber="S2", stowed=False, thick=True, shield_yaw=0.0, stock="K0"):
     M = MF.build_all()
     if thick:
         thicken(M)
-    build_shield(M)
+    build_shield(M, shield_yaw)
     if stowed:
-        place_rifle(M, "RifleStowed", "UpperLegR", (-50, 31, 134), (0, 0, -1), (0, -1, 0))   # 1차 Y 13 은 늘어뜨린 손·아래팔과 겹침 → 허벅지 바깥 뒤쪽
+        place_rifle(M, "RifleStowed", "UpperLegR", (-50, 31, 134), (0, 0, -1), (0, -1, 0), stock)   # 1차 Y 13 은 늘어뜨린 손·아래팔과 겹침 → 허벅지 바깥 뒤쪽
     else:
         fc = np.array((-42.5, -0.5, 142.5))
         a_ = np.array((0, -0.5, -0.866)); b_ = np.array((0, -0.866, 0.5))
-        place_rifle(M, "Rifle", "HandR", fc - a_ * -3 - b_ * 0, a_, b_)
+        place_rifle(M, "Rifle", "HandR", fc - a_ * -3 - b_ * 0, a_, b_, stock)
     if saber == "S1":
         hilt(M, "SaberHilt", "Shield", (53.5, 13, 138), (0, 0, 1))
     else:
