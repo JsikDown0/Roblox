@@ -190,10 +190,11 @@ if __name__ == "__main__":
     palette_png(h2.PAL, pal)
     palette_png(h2.PAL, os.path.join(out, "MassPalette_EmitMask.png"), mask=True)
     for j in sel:
-        if j.startswith("chest3"):                                      # 가슴 r3 + 머리 A: chest3a, chest3b
-            import mass_chest_r3 as c3
-            M = c3.build_all(j[-1])
-            rep = write_glb(parts_of(M), pal, os.path.join(out, "Mass_Upper_r3%s_20261103.glb" % j[-1]))
+        if j.startswith("chest"):                                       # 가슴 rN + 머리 A: chest3a, chest4b …
+            import importlib
+            cm = importlib.import_module("mass_chest_r%s" % j[5])
+            M = cm.build_all(j[-1])
+            rep = write_glb(parts_of(M), pal, os.path.join(out, "Mass_Upper_r%s%s_20261103.glb" % (j[5], j[-1])))
         else:
             M = h5.build_all(j) if j in "ABCDE" else h4.build_all(j)
             rep = write_glb(head_parts(M), pal, os.path.join(out, "Mass_Head_%s_20261103.glb" % j))
