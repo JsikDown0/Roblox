@@ -187,7 +187,7 @@ if __name__ == "__main__":
     sel = sys.argv[2].split(",") if len(sys.argv) > 2 else ["a", "c", "d"]
     os.makedirs(out, exist_ok=True)
     pal = os.path.join(out, "MassPalette.png")
-    PALX = dict(h2.PAL); PALX[8] = (196, 196, 184)                       # 8 = 흉판 모서리 흰 선(가슴 r5)
+    PALX = dict(h2.PAL); PALX[8] = (196, 198, 200)                       # 8 = 크롬(피스톤 로드, 하체 r4) — 흰 선(가슴 r5)은 철회
     palette_png(PALX, pal)
     palette_png(PALX, os.path.join(out, "MassPalette_EmitMask.png"), mask=True)
     for j in sel:

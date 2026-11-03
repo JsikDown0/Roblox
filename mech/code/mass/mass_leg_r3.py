@@ -33,7 +33,7 @@ BEND = dict(U=-6, L=10, F=-4)
 NAMES = {"D": "D 홈형 피스톤", "E": "E 열린 앞 + 호스"}
 
 
-def build_lower(M, v="E"):
+def build_lower(M, v="E", piston=True, hose_out=0, toe="groove"):
     for n in ("LowerLegL", "LowerLegR", "FootL", "FootR"):
         M.parts.pop(n, None)
     L = M.part("LowerLegL", (-8, -34, 30), (54, 36, 128), pivot=KNEE, parent="UpperLegL")
@@ -80,16 +80,22 @@ def build_lower(M, v="E"):
         L.add(op & (Y == -8), 3)                                                              # 열린 앞 속 짙은 프레임
         for z0 in (66, 74, 82):
             L.groove(op & (Y == -8) & (Z == z0), 4)
-    rr = 3.6 if v == "E" else 3.0
-    L.add(cbox(G, (CX - 4, CX + 4), (py - 3, -7), (89, 93), {"xy": 1}), 3)                     # 위 받침
-    L.add(cyl(G, "z", (CX, py), rr, rng=(76, 90)), 2)                                          # 실린더
-    L.add(cyl(G, "z", (CX, py), rr + 0.6, rng=(86, 88)), 3)                                    # 실린더 위 테
-    L.add(cyl(G, "z", (CX, py), rr - 1.3, rng=(60, 76)), 7)                                    # 로드(강철)
-    L.add(cyl(G, "z", (CX, py), rr + 0.3, rng=(79, 81)), 5)                                    # 노랑 띠
-    L.add(cbox(G, (CX - 4, CX + 4), (py - 3, -7), (57, 61), {"xy": 1}), 3)                     # 아래 받침(커프 위)
+    if piston:
+        rr = 3.6 if v == "E" else 3.0
+        L.add(cbox(G, (CX - 4, CX + 4), (py - 3, -7), (89, 93), {"xy": 1}), 3)                     # 위 받침
+        L.add(cyl(G, "z", (CX, py), rr, rng=(76, 90)), 2)                                          # 실린더
+        L.add(cyl(G, "z", (CX, py), rr + 0.6, rng=(86, 88)), 3)                                    # 실린더 위 테
+        L.add(cyl(G, "z", (CX, py), rr - 1.3, rng=(60, 76)), 7)                                    # 로드(강철)
+        L.add(cyl(G, "z", (CX, py), rr + 0.3, rng=(79, 81)), 5)                                    # 노랑 띠
+        L.add(cbox(G, (CX - 4, CX + 4), (py - 3, -7), (57, 61), {"xy": 1}), 3)                     # 아래 받침(커프 위)
     if v == "E":                                                                               # 종아리 바깥 호스(검정)
-        for a_, b_ in (((CX + 14, 6, 94), (CX + 18, 10, 78)), ((CX + 18, 10, 78), (CX + 17, 6, 60)), ((CX + 17, 6, 60), (CX + 14, 2, 50))):
+        o = hose_out
+        pts = [(CX + 14, 6, 94), (CX + 18 + o, 10 + o * 0.5, 78), (CX + 17 + o, 6 + o * 0.5, 60), (CX + 14, 2, 50)]
+        for a_, b_ in zip(pts[:-1], pts[1:]):
             L.add(r1.seg(G, a_, b_, 1.8), 4)
+        if o:                                                                                 # 양끝 죔쇠(짙은) — 호스가 판에서 떨어져 나왔다 들어감
+            for c_ in (pts[0], pts[-1]):
+                L.add(cbox(G, (c_[0] - 2, c_[0] + 1), (c_[1] - 2, c_[1] + 2), (c_[2] - 2, c_[2] + 2), {"xy": 1}), 3)
     L.rot = rotx(BEND["L"])
     L.trim()
     # ---- 발: 한 덩어리 + 발목으로 솟는 혀 + 양옆 발목 가드 + 바깥 큰 원반
@@ -99,7 +105,10 @@ def build_lower(M, v="E"):
     F.add(poly(G, "x", prof) & cbox(G, (CX - 14, CX + 14), (-40, 30), (0, 28), {"x-y": 5, "x+y": 3, "+zx": 3}), 1)
     F.add(cbox(G, (CX - 15, CX + 15), (-40, 29), (0, 3), {"xy": 4}), 3)
     F.add(cbox(G, (CX - 13, CX + 13), (-41, -31), (2, 12), {"-y+z": 4, "x-y": 4}), 2)
-    F.groove((X == CX) & (Y <= -20) & (Z >= 3), 4)
+    if toe == "split":                                                                        # 실제로 살짝 갈라진 발끝(3칸 틈, 앞 13칸)
+        F.cut((np.abs(X - CX) <= 1) & (Y <= -28))
+    else:
+        F.groove((X == CX) & (Y <= -20) & (Z >= 3), 4)
     F.add(cbox(G, (CX - 12, CX + 12), (22, 31), (2, 16), {"+y+z": 4, "x+y": 3}), 1)
     F.add(cbox(G, (CX - 9, CX + 9), (-20, -4), (20, 40), {"-y+z": 5, "xy": 2}), 1)              # 혀(발등 → 발목, 커프 밑으로)
     F.add(cbox(G, (CX - 8, CX + 8), (-7, 9), (24, 44), {"xy": 3}), 3)                           # 발목 짙은 블록
