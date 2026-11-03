@@ -4,6 +4,8 @@
   PistonCylL  부모 LowerLegL  위 고정점 T (무릎판 밑)
   PistonRodL  부모 FootL      아래 고정점 B (발 혀 위 귀)
   (R 도 같음)
+  팔(상체 동력부, mass_power_r1.py): ArmCylL(부모 UpperArmL, 위 고정점) · ArmRodL(부모 LowerArmL, 아래 고정점) —
+    Motor6D "ArmCylJointL"/"ArmRodJointL" + Attachment "ArmTopL"(UpperArmL) · "ArmBotL"(LowerArmL). 같은 방식으로 구동.
 Studio 템플릿에서 준비할 것:
   1) Motor6D "PistonCylJointL": Part0 = LowerLegL, Part1 = PistonCylL, C0/C1 = 고정점 T(회전 없음)
      Motor6D "PistonRodJointL": Part0 = FootL,     Part1 = PistonRodL, C0/C1 = 고정점 B(회전 없음)
@@ -52,31 +54,41 @@ local function aimMotor(motor: Motor6D, selfAtt: Attachment, targetAtt: Attachme
 	motor.Transform = fromTo(r, dir)
 end
 
-function MassPiston.init(mech)
-	-- 스폰 직후(모든 Transform 이 0 일 때) 한 번: 쉬는 자세 방향 기록
-	for _, s in ipairs({ "L", "R" }) do
-		local cyl, rod = find(mech, "PistonCylJoint" .. s), find(mech, "PistonRodJoint" .. s)
-		local top, bot = find(mech, "PistonTop" .. s), find(mech, "PistonBot" .. s)
-		if cyl and rod and top and bot then
-			cyl.Transform = CFrame.identity
-			rod.Transform = CFrame.identity
-			rest[cyl] = nil
-			rest[rod] = nil
-			aimMotor(cyl, top, bot)
-			aimMotor(rod, bot, top)
+-- {실린더 모터, 로드 모터, 위 고정점, 아래 고정점} 이름 앞부분(뒤에 L/R)
+local SETS = {
+	{ "PistonCylJoint", "PistonRodJoint", "PistonTop", "PistonBot" }, -- 정강이(발목 구동)
+	{ "ArmCylJoint", "ArmRodJoint", "ArmTop", "ArmBot" }, -- 팔(팔꿈치 구동)
+}
+
+local function each(mech, fn)
+	for _, set in ipairs(SETS) do
+		for _, s in ipairs({ "L", "R" }) do
+			local cyl, rod = find(mech, set[1] .. s), find(mech, set[2] .. s)
+			local top, bot = find(mech, set[3] .. s), find(mech, set[4] .. s)
+			if cyl and rod and top and bot and cyl:IsA("Motor6D") and rod:IsA("Motor6D") then
+				fn(cyl, rod, top, bot)
+			end
 		end
 	end
 end
 
+function MassPiston.init(mech)
+	-- 스폰 직후(모든 Transform 이 0 일 때) 한 번: 쉬는 자세 방향 기록
+	each(mech, function(cyl, rod, top, bot)
+		cyl.Transform = CFrame.identity
+		rod.Transform = CFrame.identity
+		rest[cyl] = nil
+		rest[rod] = nil
+		aimMotor(cyl, top, bot)
+		aimMotor(rod, bot, top)
+	end)
+end
+
 function MassPiston.update(mech)
-	for _, s in ipairs({ "L", "R" }) do
-		local cyl, rod = find(mech, "PistonCylJoint" .. s), find(mech, "PistonRodJoint" .. s)
-		local top, bot = find(mech, "PistonTop" .. s), find(mech, "PistonBot" .. s)
-		if cyl and rod and top and bot and cyl:IsA("Motor6D") and rod:IsA("Motor6D") then
-			aimMotor(cyl, top, bot)
-			aimMotor(rod, bot, top)
-		end
-	end
+	each(mech, function(cyl, rod, top, bot)
+		aimMotor(cyl, top, bot)
+		aimMotor(rod, bot, top)
+	end)
 end
 
 return MassPiston
