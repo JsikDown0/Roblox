@@ -1,12 +1,12 @@
-# 양산형 R-03 (이름 미정) 모델 파일 (flag_vox/1 JSON)
+# ST-10 BISON (양산형, 컨셉 표기 R-03) 모델 파일 (flag_vox/1 JSON)
 
 | 파일 | 내용 | 삼각형 |
 |---|---|---|
-| `R03_full.json` | 원래 해상도(칸 0.05) · **27 파트(몸 23 + 무장 4)** · 섬 0 · 파트당 1만 미만 · 두께 B(몸통·골반·다리 앞뒤 ×1.15) | 35,578 |
+| `BISON_full.json` | 원래 해상도(칸 0.05) · **28 파트(몸 23 + 무장 5)** · 섬 0 · 파트당 1만 미만 · 두께 B(몸통·골반·다리 앞뒤 ×1.15) | 35,838 |
 
 - 만드는 코드: `mech/code/mass/mass_final.py` (→ `mass_hose_r1` B1 → `mass_leg_r4` → `mass_leg_r3` → `mass_leg_r2` → `mass_arm_r2` f → `mass_shoulder_r3` → `mass_chest_r4` a → `mass_head_r5` A …).
-  다시 만들기: `cd mech/code/mass && python3 mass_final.py <그림 폴더> ../../models/R03` (`build_armed()` = 몸 + 무장, `build_body()` = 무장 전 몸)
-- 무장 파트: `Rifle`(부모 HandR, 개머리 K2) · `RifleStowed`(부모 UpperLegR, 오른 허벅지 바깥 세로) — 둘 중 하나만 보임 · `Shield`(부모 LowerArmL, 방패 치기 = R) · `SaberHilt`(부모 Pelvis, 왼 허리 뒤, 빔사벨 = 근접).
+  다시 만들기: `cd mech/code/mass && python3 mass_final.py <그림 폴더> ../../models/BISON` (`build_armed()` = 몸 + 무장, `build_body()` = 무장 전 몸)
+- 무장 파트: `Rifle`(부모 HandR, 개머리 K2) · `RifleStowed`(부모 UpperLegR, 오른 허벅지 바깥 세로) — 둘 중 하나만 보임 · `RifleMount`(부모 UpperLegR, 간이 거치대 H1: 허벅지 받침판 + 팔 2 + 리시버 고리 2) · `Shield`(부모 LowerArmL, 방패 치기 = R) · `SaberHilt`(부모 Pelvis, 왼 허리 뒤, 빔사벨 = 근접).
 - 관절 계층: Pelvis(뿌리) → Torso → Head · ShoulderL(→ PlateF · PlateB) · ShoulderR · UpperArmL/R → LowerArmL/R → HandL/R /
   Pelvis → UpperLegL/R → LowerLegL/R(→ PistonCylL/R) → FootL/R(→ PistonRodL/R).
 - 쉬는 자세: 팔 9° 벌림(`UpperArm roty ∓9`) · 다리 굽힘은 rot 에 구워져 있음(허벅지 −6° · 정강이 +10° · 발 −4°).
