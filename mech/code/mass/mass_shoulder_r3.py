@@ -6,6 +6,9 @@
    축에 맞춰 반듯하게 만들고, 파트 자체를 돌림(rotz ∓45 · roty −14 = 위 안쪽 1:4) → 계단 없음 + 파트 면 = 판 면 → 데칼 그대로.
    PlateF(앞 면, 바깥 = 앞·바깥 "03" 자리, 정면·옆에서 보임) · PlateB(뒤 면, 뒤·바깥 = 게임 3인칭 카메라가 늘 보는 면 → 부대 표식 자리).
    두 파트 모두 부모 ShoulderL(팔 들면 같이) · 피벗 = 꺾임선(X 62, Y −1, z 230).
+   1차 [관찰: 유저 "파트가 겹치는 곳들이 좀 이상"] ① 기울기(roty)를 각 판 안에서 먼저 돌려(rotz @ roty) 두 판의 꺾임 모서리가
+     위·아래로 엇갈림(X 자) ② 판 끝이 꺾임선에서 직각으로 끝나 바깥 꼭짓점은 V 홈, 안쪽은 두께끼리 겹침.
+     → 기울기를 공통으로 나중에(roty @ rotz, 같은 피벗) = 두 모서리가 한 선 · 판 끝을 45° 맞대기(miter, 꺾임선의 이등분면 Y = −1 에서 만남).
    GLB 로 낼 때 이 두 판은 회전을 메시에 굽지 말고(로컬 그대로) Studio 에서 CFrame 으로 돌려야 데칼 면이 판과 맞음 → 다음 PC 세션 메모.
 """
 import os
@@ -42,14 +45,14 @@ def build_left(M):
     for name, sgn, yaw in (("PlateF", -1, -45.0), ("PlateB", 1, 45.0)):
         P = M.part(name, (XA - 6, YA - 52, 196), (XA + 3, YA + 52, 264), pivot=(XA, YA, ZP), parent="ShoulderL")
         G = P.g(); X, Y, Z = G
-        half = (sgn * (Y - YA) >= -0.5)                                                   # 이 판이 맡는 쪽(꺾임선에서 앞 또는 뒤)
+        half = (sgn * (Y - YA) >= -(XA - X) - 0.5)                                       # 맡는 쪽 + 45° 맞대기(안쪽으로 갈수록 꺾임선 너머까지)
         poly_ = [(YA + t, z) for t, z in hexp]
         P.add(poly(G, "x", poly_) & half & (X >= XA - 4) & (X <= XA), 2)
         cy = np.mean([p[0] for p in poly_]); cz = np.mean([p[1] for p in poly_]); inner = []
         for u, v in poly_:
             dd = np.hypot(u - cy, v - cz); inner.append((u - (u - cy) * 3.0 / dd, v - (v - cz) * 3.0 / dd))
         P.add(poly(G, "x", inner) & (sgn * (Y - YA) >= 2) & (X == XA + 1), 2)            # 바깥 면 1칸 돋운 안쪽 판(= 데칼 면)
-        P.rot = rotz(yaw) @ roty(-ROLL)
+        P.rot = roty(-ROLL) @ rotz(yaw)                                                   # 돌리고 나서 공통으로 기울임 → 두 판 모서리가 한 선
         P.trim()
     return M
 
@@ -73,7 +76,7 @@ if __name__ == "__main__":
     Rr = os.path.join(HERE, "..", "..", "docs", "레퍼런스", "양산형")
     con = Image.open(os.path.join(Rr, "concept_v1_삼면도.png")).convert("RGB")
     mn = Image.open(os.path.join(Rr, "concept_v1_메인.png")).convert("RGB")
-    specs = [(0, 2, "정면"), (35, 8, "앞 3/4 (왼쪽 판)"), (45, 14, "앞 판에 수직(데칼 시점)"), (90, 2, "옆(왼쪽)"), (150, 10, "뒤 3/4 (게임 카메라 쪽)")]
+    specs = [(0, 2, "정면"), (45, 14, "앞 판에 수직(데칼 시점)"), (90, 2, "옆(왼쪽)"), (90, 70, "위에서(꺾임선)"), (150, 10, "뒤 3/4 (게임 카메라 쪽)")]
     rows = [("r2 F (계단 판)", s2.build_all("F")), ("r3 F (평평한 판 파트 2장)", build_all())]
     rend = []
     for nm, M in rows:
