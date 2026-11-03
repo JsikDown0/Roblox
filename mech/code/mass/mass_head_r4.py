@@ -21,7 +21,7 @@ import mass_head_r2 as h2  # noqa: E402
 import mass_head_r3 as h3  # noqa: E402
 
 PAL = h2.PAL
-JAWS = {"a": "a 매끈", "b": "b 앞턱(쐐기)", "c": "c 감싼 턱(U)", "d": "d 좁은 턱(V)"}
+JAWS = {"a2": "a2 턱판 확장", "a": "a 매끈", "b": "b 앞턱(쐐기)", "c": "c 감싼 턱(U)", "d": "d 좁은 턱(V)"}
 
 
 def build_head(M, jaw="a", parent="Torso", pivot_z=r1.NECK_Z):
@@ -38,6 +38,8 @@ def build_head(M, jaw="a", parent="Torso", pivot_z=r1.NECK_Z):
     if jaw == "b":      # 턱 아래가 앞으로: z236~241 에서 앞면을 Y −15 까지, 아래 모서리 45°
         H.add((ax <= 8 - np.clip(241 - Z, 0, None) * 0.5) & (Z >= 235) & (Z <= 242) & (Y >= -17) & (Y <= -8)
               & (Y >= -17 + np.clip(238 - Z, 0, None)), 1)
+    if jaw == "a2":     # 유저 표시(11-03): 바이저 바로 밑 얇은 띠를 턱 끝까지 → 앞면이 평평한 한 장의 턱판
+        H.add((ax <= 10.5 - (243 - Z) * 0.15) & (Z >= 235) & (Z <= 242.5) & (Y >= -13) & (Y <= -6), 1)
     if jaw == "d":      # V 턱: 아래로 갈수록 좁게
         H.cut((Z < 242) & (Y < 0) & (ax > 2.5 + (Z - 234) * 0.85))
     neck = cyl(G, "z", (0, 3), 7, rng=(226, 236)) & ~(H.a > 0)
@@ -96,7 +98,8 @@ if __name__ == "__main__":
     con = Image.open(os.path.join(R, "concept_v1_삼면도.png")).convert("RGB")
     mn = Image.open(os.path.join(R, "concept_v1_메인.png")).convert("RGB")
     specs = [(0, 0, "정면"), (-35, 4, "앞 3/4"), (-90, 0, "옆")]
-    rows = [("r3 (지금)", h3.build_all(0.88))] + [(JAWS[j], build_all(j)) for j in "abcd"]
+    sel = sys.argv[2].split(",") if len(sys.argv) > 2 else list("abcd")
+    rows = ([("r3 (지금)", h3.build_all(0.88))] if len(sys.argv) <= 2 else []) + [(JAWS[j], build_all(j)) for j in sel]
     rend = []
     for nm, M in rows:
         p = M.parts["Head"]; _, k = ndimage.label(p.a > 0)
@@ -123,4 +126,5 @@ if __name__ == "__main__":
     x = 190
     for i, t in enumerate(["정면", "앞 3/4", "옆"]):
         d.text((x + 6, 60 + len(allrows) * (H + 16) + 2), t, fill=(220, 220, 220), font=f); x += cols[i] + 16
-    p = os.path.join(out, "시안_머리r4_하관비교.png"); sh.save(p); print(p, sh.size)
+    p = os.path.join(out, "시안_머리r4_하관비교.png" if len(sys.argv) <= 2 else "시안_머리r4_%s.png" % "_".join(sel))
+    sh.save(p); print(p, sh.size)
