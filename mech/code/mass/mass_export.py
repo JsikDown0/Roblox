@@ -2,7 +2,7 @@
 
 aero_export.py 의 greedy_mesh · palette_uv · write_glb 를 그대로 옮김(그 모듈은 Aero 빌드를 import 해서 따로 못 씀).
 노드 = 파트(Head 하나), 정점 = 월드(Blender, 칸 × 0.05) → glTF (x, z, −y), 팔레트 UV(8×8 칸, NEAREST), 재질 1개.
-쓰기: python3 mass_export.py <출력폴더> [a,c,d]   (원래 해상도 — 게임용 절반 해상도는 확정 뒤)
+쓰기: python3 mass_export.py <출력폴더> [a,c,d]  (소문자 = r4 하관 안, 대문자 A~E = r5 3면 안)   (원래 해상도 — 게임용 절반 해상도는 확정 뒤)
 """
 import json
 import os
@@ -17,6 +17,7 @@ sys.path.insert(0, os.path.join(HERE, "..", "flagship_tools"))
 import mass_r1 as r1  # noqa: E402
 import mass_head_r2 as h2  # noqa: E402
 import mass_head_r4 as h4  # noqa: E402
+import mass_head_r5 as h5  # noqa: E402
 
 VOXF = 0.05
 
@@ -176,6 +177,6 @@ if __name__ == "__main__":
     palette_png(h2.PAL, pal)
     palette_png(h2.PAL, os.path.join(out, "MassPalette_EmitMask.png"), mask=True)
     for j in sel:
-        M = h4.build_all(j)
+        M = h5.build_all(j) if j in "ABCDE" else h4.build_all(j)
         rep = write_glb(head_parts(M), pal, os.path.join(out, "Mass_Head_%s_20261103.glb" % j))
         print(j, rep)
