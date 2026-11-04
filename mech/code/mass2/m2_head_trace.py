@@ -138,6 +138,7 @@ def build(M, deep=10, parent=None):
 
 
 EAR_GEOM = False
+R8 = False       # r8: 컨셉 비율(전체 폭 : 높이 = 36 : 21 ≈ 1.7) — r7 은 32 : 25 ≈ 1.3 이라 길쭉해 귀여움이 빠짐 → 위 덮개 판 없음 · 귀 바깥 끝 ±18 · 몸통 ±13 · 좁아짐 완화
 R7 = False       # r7 [결정 11-04]: r5 에서 — 머리 둘레 디테일(r6) 없음 · 귀 색 = r6(회색 테 + 가운데 원 하나) · 귀 모양 = 적층 덜(원통 + 45° 모따기) · 위에서 보면 뒤가 넓고 앞으로 좁아짐
 
 
@@ -167,7 +168,9 @@ def build_clean(M, deep=10, parent=None):
     dep &= ~ear | ((ey <= 6) & (ey + ez <= 9))
     if EAR_GEOM or R7:
         silb = silb & ~ear                                                                         # r6: 귀는 지도 대신 도형으로(아래)
-    if R7:
+    if R7 and R8:
+        dep &= (ax <= 13 - np.clip(14 - Yb, 0, None) * 0.06)                                       # 뒤 ±13 → 앞 ±10.6
+    elif R7:
         dep &= (ax <= 12 - np.clip(14 - Yb, 0, None) * 0.09)                                       # 뒤 |X| 12 → 앞 약 8.4(앞으로 좁아짐)
     H.a[silb & dep] = SAND
     yfront = np.where((H.a > 0).any(1), (H.a > 0).argmax(1), -1)[:, None, :] + H.lo[1]         # 기둥 앞면 Y
@@ -197,11 +200,13 @@ def build_clean(M, deep=10, parent=None):
             H.paint(surf & outward & ear & (np.sqrt((Yb - 1) ** 2 + (Zb - 247) ** 2) < 2.8) & (ax >= 15), 3)
         else:
             rr = np.sqrt((Yb - 1) ** 2 + (Zb - 247) ** 2)
-            pod = (ax >= 11) & (ax <= 16) & (rr <= 6.6 - np.clip(ax - 14, 0, None))                 # 원통 + 바깥 모서리 45°(반구보다 계단 적음)
+            pe = 18 if R8 else 16
+            pod = (ax >= 11) & (ax <= pe) & (rr <= 6.6 - np.clip(ax - (pe - 2), 0, None))           # 원통 + 바깥 모서리 45°(반구보다 계단 적음)
             H.add(pod & ~(H.a > 0), SAND)
             H.add((ax >= 11) & (ax <= 12) & (rr <= 7.8) & (rr >= 5.0), 2)                           # 귀를 감싸는 회색 테(머리 쪽)
-            H.paint(pod & (ax >= 15) & (rr <= 2.6), 2)                                              # 가운데 회색 원 하나
-        H.add(cbox(G, (-9, 9), (F - 6, 4), (260, 261), {"xy": 2}) & ~(H.a > 0), 1)
+            H.paint(pod & (ax >= pe - 1) & (rr <= 2.6), 2)                                          # 가운데 회색 원 하나
+        if not R8:
+            H.add(cbox(G, (-9, 9), (F - 6, 4), (260, 261), {"xy": 2}) & ~(H.a > 0), 1)
         H.groove((ax <= 9) & (Yb >= F - 6) & (Yb <= 4) & (Zb == 261) & ((ax == 9) | (Yb == F - 6) | (Yb == 4)), 4)
     else:
         # r6 [유저 표시 11-04] ① 귀 = 가운데 회색 원 하나 + 귀를 크게 감싸는 회색 테 ② 앞에서 봐도 둥글게 ③ 머리 둘레 디테일(위 해치 · 볼판)
@@ -267,10 +272,10 @@ if __name__ == "__main__":
     clsimg = Image.fromarray(lut[cls]).resize(((BOX[2] - BOX[0]) * 3, (BOX[3] - BOX[1]) * 3), Image.NEAREST)
     rows = []
 
-    for nm, M in (("r5 (전)", "clean"), ("r7 = r5 + 귀(원통·모따기, 회색 테·원) + 앞으로 좁아지는 머리", "r7")):
+    for nm, M in (("r7 (전)", "r7"), ("r8 = r7 + 컨셉 비율(넓고 낮게: 덮개 판 없음 · 귀 ±18 · 몸통 ±13)", "r8")):
         Mm = fv.Model(); h1.collar(Mm)
-        if M in ("clean", "r6", "r7"):
-            globals()["EAR_GEOM"] = (M == "r6"); globals()["R7"] = (M == "r7")
+        if M in ("clean", "r6", "r7", "r8"):
+            globals()["EAR_GEOM"] = (M == "r6"); globals()["R7"] = (M in ("r7", "r8")); globals()["R8"] = (M == "r8")
             build_clean(Mm, deep=10)
         else:
             build(Mm, deep=10)
@@ -288,7 +293,7 @@ if __name__ == "__main__":
     top = [con, clsimg, mapimg]
     Ht = max(i.height for i in top)
     sh = Image.new("RGB", (max(W, sum(i.width for i in top) + 64), 60 + Ht + 60 + 2 * (H + 46)), (24, 25, 28)); d = ImageDraw.Draw(sh)
-    d.text((16, 14), "새 양산기 머리 r7 — r5 기반 · 귀 · 앞으로 좁아지는 머리 (컨셉 · 픽셀 분류 · 칸 지도)", fill=(235, 235, 235), font=ft)
+    d.text((16, 14), "새 양산기 머리 r8 — 컨셉 비율로 넓고 낮게 (컨셉 · 픽셀 분류 · 칸 지도)", fill=(235, 235, 235), font=ft)
     x = 16
     for im in top:
         sh.paste(im, (x, 60)); x += im.width + 16
@@ -299,4 +304,4 @@ if __name__ == "__main__":
         for im in ims:
             sh.paste(im, (x, y0 + 26)); x += im.width + 16
         y0 += H + 46
-    p = os.path.join(out, "시안_머리r7.png"); sh.save(p); print(p, sh.size)
+    p = os.path.join(out, "시안_머리r8_비율.png"); sh.save(p); print(p, sh.size)
