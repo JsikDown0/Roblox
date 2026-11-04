@@ -22,7 +22,7 @@ PAL = e1.pal("c"); PAL[10] = (255, 170, 60)
 METAL = MF.METAL
 WALL_H = 300
 PX = (-135, -45, 45, 135)                                     # 기둥 X
-PY = {-135: -10, -45: 0, 45: 0, 135: -10}                     # 바깥 기둥이 앞으로(오목한 3판)
+PY = {-135: -22, -45: 0, 45: 0, 135: -22}                     # [결정 11-04] 레퍼런스처럼 오목하게: 바깥 기둥 앞으로 22(바깥 판 약 14°)
 
 
 def pillar(P, x, y):
@@ -53,14 +53,53 @@ def build_wall():
         E = M.part("EnergyP%d" % (i + 1), (a - 2, -16, 40), (b + 3, 6, WALL_H - 40), parent="WallPillar%d" % (i + 1))
         G = E.g(); X, Y, Z = G
         ya, yb = PY[a] - 3, PY[b] - 3
-        t = (X - a) / (b - a); yc = ya + (yb - ya) * t - 4 * np.sin(np.pi * t)
+        t = (X - a) / (b - a); yc = ya + (yb - ya) * t + 3 * np.sin(np.pi * t)                # 판 가운데가 뒤로(오목)
         E.add((X >= a + 9) & (X <= b - 9) & (np.abs(Y - yc) <= 0.6) & (Z >= 46) & (Z <= WALL_H - 48), 10)
         E.trim()
     M.extra["studio_only"] = ["EnergyP1", "EnergyP2", "EnergyP3"]
     return M
 
 
-def build_turret():
+HEADS = {"T0": "T0 r1(영사기 같음)", "T1": "T1 쐐기 머리 + 아래 총열", "T2": "T2 낮고 넓은 상자 + 긴 총열 덮개", "T3": "T3 양옆 장갑 포드 + 가운데 총"}
+
+
+def turret_head(M, kind):
+    H = M.part("TurretHead", (-34, -60, 70), (35, 34, 118), pivot=(0, 0, 72), parent="TurretBase")
+    G = H.g(); X, Y, Z = G; ax = np.abs(X)
+    if kind == "T1":                                                                           # 쐐기: 앞 윗면 45° · 아래 총열이 앞으로 길게
+        H.add(cbox(G, (-22, 22), (-20, 24), (74, 102), {"xy": 4, "+zy": 4, "+z-y": (14, 14), "-z-y": 3}), 9)
+        H.add(cbox(G, (-15, 15), (-22, -8), (74, 86), {"xy": 2}), 3)                          # 아래 짙은 턱(총 받침)
+        H.add(beam_y(G, 0, 81, -22, -48, 3.0), 2)                                              # 총열
+        H.add(beam_y(G, 0, 81, -46, -52, 4.2), 3)                                              # 소염기
+        H.add(cbox(G, (-24, -22), (-12, 18), (80, 98), {"yz": 2}), 2); H.add(cbox(G, (22, 24), (-12, 18), (80, 98), {"yz": 2}), 2)   # 옆 덧판
+    elif kind == "T2":                                                                         # 낮고 넓은 상자 + 긴 각진 총열 덮개
+        H.add(cbox(G, (-26, 26), (-16, 24), (74, 94), {"xy": 5, "+zx": 3, "+zy": 3}), 9)
+        H.add(cbox(G, (-8, 8), (-44, -14), (78, 90), {"xy": 2, "+z-y": 3, "-z-y": 2}), 2)       # 총열 덮개(짙은 쇠)
+        for x0 in (-6, 6):
+            H.groove((X == x0) & (Y >= -40) & (Y <= -18) & (Z == 90), 4)                        # 덮개 통풍 홈
+        H.add(beam_y(G, 0, 84, -44, -54, 2.6), 3)                                              # 총구
+        H.add(cbox(G, (-20, 20), (24, 30), (76, 92), {"xy": 2}), 3)                            # 뒤 탄약 상자
+    else:                                                                                      # 양옆 장갑 포드 + 가운데 총(짙은 몸)
+        H.add(cbox(G, (-10, 10), (-14, 20), (76, 96), {"xy": 3}), 3)                           # 가운데 총 몸
+        for s in (1, -1):
+            xr = sorted((s * 11, s * 26))
+            H.add(cbox(G, xr, (-20, 22), (74, 104), {"xy": 4, "+z-y": (8, 8), "-z-y": 3, "+zx": 3}), 9)   # 장갑 포드
+        H.add(beam_y(G, 0, 86, -14, -46, 3.0), 2)
+        H.add(beam_y(G, 0, 86, -42, -50, 4.4), 3)
+    H.add(box(G, x=(-10, 10), y=(-4, 6), z=(Z.max() - 0, Z.max())) & False, 3)
+    top = int(np.argwhere(H.a > 0)[:, 2].max() + H.lo[2])
+    H.add(box(G, x=(-10, 10), y=(0, 8), z=(top + 1, top + 3)) & ~box(G, x=(-8, 8), y=(2, 6), z=(top, top + 2)), 3)   # 위 손잡이(크레인)
+    bore = (ax <= 1) & (np.abs(Z - (81 if kind == "T1" else 84 if kind == "T2" else 86)) <= 1) & (Y <= Y.min() + 60) & (Y < -40)
+    H.cut(bore & (Y <= -46))
+    H.trim()
+
+
+def beam_y(G, x, z, y0, y1, r):
+    X, Y, Z = G
+    return (np.abs(X - x) <= r) & (np.abs(Z - z) <= r) & (Y >= min(y0, y1)) & (Y <= max(y0, y1)) & (np.abs(X - x) + np.abs(Z - z) <= 2 * r - 1)
+
+
+def build_turret(head="T0"):
     M = fv.Model()
     T = M.part("TurretBase", (-70, -70, 0), (71, 71, 80), pivot=(0, 0, 72))
     G = T.g(); X, Y, Z = G
@@ -79,6 +118,9 @@ def build_turret():
         T.add(cyl(G, "z", (knee[0], knee[1]), 6.5, rng=(knee[2] - 4, knee[2] + 4)), 3)        # 무릎 관절
         T.add(cyl(G, "z", (foot[0], foot[1]), 8, rng=(0, 6)), 3)                              # 발
         T.trim()
+    if head != "T0":
+        turret_head(M, head)
+        return M
     H = M.part("TurretHead", (-28, -40, 72), (29, 30, 112), pivot=(0, 0, 72), parent="TurretBase")
     G = H.g(); X, Y, Z = G
     H.add(cbox(G, (-22, 22), (-20, 22), (74, 104), {"xy": 5, "+zx": 4, "+zy": 4, "-zy": 3}), 9)
