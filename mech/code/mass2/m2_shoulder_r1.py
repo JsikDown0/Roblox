@@ -73,7 +73,7 @@ def surf_hole(P, c, u, r=2.2, depth=2, rim=True):
     P.a[(perp <= r) & (t <= tm - depth) & (t > tm - depth - 1.5) & (P.a > 0)] = 4
 
 
-def dome_L(M, var="a"):
+def dome_L(M, var="a", holes=True):
     """왼 어깨 돔(+X) + 안쪽 짙은 회색 컵.
     1차: 돔 중심 X46 · 컵 X29~34 가 돔 뒤에 숨어 안 보이고 돔이 몸통에서 떠 보임 · 구멍이 점 → 중심 X44 · 컵을 3칸 크게(X27~35) · 구멍 r2.2 + 테."""
     D = M.part("ShoulderArmorL", (22, -28, 202), (70, 28, 260), pivot=(SJ[0], 0, SJ[2]), parent="Torso")
@@ -86,13 +86,13 @@ def dome_L(M, var="a"):
         g = min(2, -5 + k_)                                                                        # 2차: 평평한 원판(X27~35 같은 크기)은 따로 붙은 판처럼 보임
         D.add(facet_ellipsoid(G, c, (r[0] + g, r[1] + g, r[2] + g), dirs, k=0.97) & (X == xk) & ~(D.a > 0), 2)
     D.groove((X == 36) & body, 4)                                                                    # 돔·컵 이음
-    for u in ((0.35, -1, -0.45), (0.35, 1, -0.45), (1, 0, -0.55)):                                  # 앞 아래 · 뒤 아래 · 바깥 아래
+    for u in ((0.35, -1, -0.45), (0.35, 1, -0.45), (1, 0, -0.55)) if holes else ():                 # 앞 아래 · 뒤 아래 · 바깥 아래
         surf_hole(D, c, u)
     D.trim()
     return D
 
 
-def block_R(M, var="a"):
+def block_R(M, var="a", holes=True):
     """오른 어깨 상자(−X): 모서리 깎은 모래 상자.
     1차: 앞뒤 30칸·모서리 4칸 → 뚱뚱한 직육면체 → 앞뒤 24칸 · 세로 모서리 6칸(위에서 8각) · 위 바깥 큰 45°."""
     B = M.part("ShoulderArmorR", (-60, -20, 204), (-26, 20, 246), pivot=(-SJ[0], 0, SJ[2]), parent="Torso")
@@ -102,16 +102,20 @@ def block_R(M, var="a"):
     B.add(cbox(G, (x1 + 1, x1 + 4), (-9, 9), (z0 + 4, z1 - 3), {"yz": 2}) & ~(B.a > 0), 2)          # 안쪽 짙은 받침
     if var == "b":
         B.groove((Z == 225) & (X <= x1 - 1), 4)                                                     # 가로 이음매(줄무늬 아래)
-    surf_hole(B, (-43, 0, 216), (0, -1, 0), r=1.6)                                                   # 앞 아래 볼트 구멍
+    if holes:
+        surf_hole(B, (-43, 0, 216), (0, -1, 0), r=1.6)                                                  # 앞 아래 볼트 구멍
     B.trim()
     return B
 
 
-def build_all(var="a", stripes=False):
+def build_all(var="a", stripes=False, final=False):
+    """final=True → 어깨 확정 [결정 11-04 "A로 가고 어깨 구멍은 굳이 없어도 될 것 같아"] = a(돔 8각 · 상자 이음매 없음) · 구멍 없음."""
+    if final:
+        var = "a"
     M = ch.build_all(final=True)
     for s in (1, -1):
         joint(M, s)
-    dome_L(M, var); block_R(M, var)
+    dome_L(M, var, holes=not final); block_R(M, var, holes=not final)
     if stripes:
         paint_stripes(M)
     return M
