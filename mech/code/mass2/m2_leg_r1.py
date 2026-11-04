@@ -27,15 +27,22 @@ CX = 23
 HIP, KNEE, ANK = (CX, 0, 152), (CX, -1, 108), (CX, 0, 36)
 SPLAY = 3                     # 고관절에서 바깥으로 3°(원본 정면의 벌린 자세), 발은 바닥에 평평하게 되돌림
 ARM_SPLAY = {"UpperArmL": roty(-9), "UpperArmR": roty(9)}
+R2 = False                    # r2 [유저 11-04 표시 4곳]: 고관절 작게 · 무릎판 = 위아래 잇는 부품 · 발목 장갑 작게 + 양옆 모래 사이 · 발 세로 홈 뺌
 SPEC = {"a": dict(bulge=3, back=5, ft=1.0), "b": dict(bulge=4, back=8, ft=1.1)}
 
 
 def upper_leg(M):
     U = M.part("UpperLegL", (0, -22, 112), (46, 20, 166), pivot=HIP, parent="Pelvis")
     G = U.g(); X, Y, Z = G; dx = np.abs(X - CX)
-    U.add(sh.facet_ellipsoid(G, HIP, (9, 9, 9), sh.DIRS_A), 3)                                       # 고관절 공(장갑 속)
-    U.add(cbox(G, (CX - 10, CX + 10), (-10, 10), (116, 150), {"xy": 3}), 3)                           # 짙은 뼈대
-    U.add(cbox(G, (CX - 15, CX + 15), (-15, 14), (122, 147), {"xy": 5, "+zx": 4, "+zy": 3, "-zy": 3, "-zx": 2}), 1)   # 허벅지 장갑
+    if R2:
+        # 파랑 [유저 "골반 관절이 원본은 두껍고 크지 않았어. 살짝 노출돼서 다리와 골반을 잇는 느낌"]: 공 r9 → r6 · 뼈대 ±10 → ±7 · 장갑 위 끝 z147 → 153(치마 밑으로 짙은 관절이 조금만 드러남)
+        U.add(sh.facet_ellipsoid(G, HIP, (6, 6, 6), sh.DIRS_A), 3)
+        U.add(cbox(G, (CX - 7, CX + 7), (-7, 7), (116, 150), {"xy": 2}), 3)
+        U.add(cbox(G, (CX - 15, CX + 15), (-15, 14), (122, 153), {"xy": 5, "+zx": 4, "+zy": 3, "-zy": 3, "-zx": 2}), 1)
+    else:
+        U.add(sh.facet_ellipsoid(G, HIP, (9, 9, 9), sh.DIRS_A), 3)                                   # 고관절 공(장갑 속)
+        U.add(cbox(G, (CX - 10, CX + 10), (-10, 10), (116, 150), {"xy": 3}), 3)                       # 짙은 뼈대
+        U.add(cbox(G, (CX - 15, CX + 15), (-15, 14), (122, 147), {"xy": 5, "+zx": 4, "+zy": 3, "-zy": 3, "-zx": 2}), 1)   # 허벅지 장갑
     U.emboss((dx <= 10) & (Z >= 127) & (Z <= 143) & (Y < -14) & (dx <= 10 - np.clip(129 - Z, 0, None)), 1)          # 앞 덧판 1칸
     U.add(cbox(G, (CX - 9, CX + 9), (14, 16), (126, 146), {"x+y": 2}) & ~(U.a > 0), 2)               # 뒤 판(짙은)
     U.rot = roty(-SPLAY)
@@ -63,25 +70,45 @@ def lower_leg(M, v):
     w = 12 + np.minimum(np.clip(98 - Z, 0, None) / 2.0, b) - np.clip(64 - Z, 0, None) / 2.0
     yf = -12 - np.minimum(np.clip(98 - Z, 0, None) / 2.0, 1.5) + np.clip(62 - Z, 0, None) / 2.0
     yb = 10 + np.minimum(np.clip(96 - Z, 0, None), bk) - np.clip(68 - Z, 0, None) / 2.0
-    shin = (dx <= w) & (Y >= yf) & (Y <= yb) & (Z >= 52) & (Z <= 98)
+    if R2:
+        # 초록 [유저 "좀 크고, 양옆 모래 부분에 낀 느낌"]: 정강이 양옆을 z40 까지 내려(가운데 ±8 은 비움) 짙은 발목 판이 그 사이에 끼게
+        w = np.maximum(w, 11.0)
+        yf = -13.5 + np.clip(58 - Z, 0, None) / 2.0
+        yb = np.maximum(yb, 8.0)
+        shin = (dx <= w) & (Y >= yf) & (Y <= yb) & (Z <= 98) & ((Z >= 52) | ((Z >= 40) & ((dx > 8) | (Y > 4))))
+    else:
+        shin = (dx <= w) & (Y >= yf) & (Y <= yb) & (Z >= 52) & (Z <= 98)
     shin &= ((w - dx) + (Y - yf) >= 4) & ((w - dx) + (yb - Y) >= 5)                                  # 세로 모서리 45°
     L.add(shin & ~(L.a > 0), 1)
     L.add(cbox(G, (CX - 11, CX + 11), (-10, 10), (92, 102), {"xy": 3}) & ~(L.a > 0), 3)               # 무릎 밑 짙은 이음
     # 무릎판: 짙은 회색 육각 · 정강이 위를 덮는 처마 · 2단
-    kp = cbox(G, (CX - 12, CX + 12), (-21, -11), (86, 126), {"xz": 7, "x-y": 3, "+z-y": 4, "-z-y": 3})
-    L.add(kp, 2)
-    L.emboss((dx <= 8 - np.clip(np.abs(Z - 106) - 12, 0, None)) & (Z >= 91) & (Z <= 121) & (Y < -20), 2)
+    if R2:
+        # 빨강 [유저 "위아래를 잇는 부분인데 무릎 위에 덧댄 보호대처럼 보여"]: 앞으로 8칸 튀어나온 판(z86~126) → 허벅지 끝(z122)과 정강이 위(z98) 사이를
+        # 채우는 무릎 마디 — 폭 ±10 · 앞면 Y−16(허벅지 앞면과 같은 높이) · 위아래로 2칸씩 겹쳐 들어감 · 2단 판 뺌
+        kp = cbox(G, (CX - 10, CX + 10), (-16, -6), (95, 124), {"xz": 4, "x-y": 3, "+z-y": 2, "-z-y": 3})
+        L.add(kp, 2)
+    else:
+        kp = cbox(G, (CX - 12, CX + 12), (-21, -11), (86, 126), {"xz": 7, "x-y": 3, "+z-y": 4, "-z-y": 3})
+        L.add(kp, 2)
+        L.emboss((dx <= 8 - np.clip(np.abs(Z - 106) - 12, 0, None)) & (Z >= 91) & (Z <= 121) & (Y < -20), 2)
     # 정강이 바깥 옆: 원형 못 + 직사각 블록(팔 관절과 같은 말)
     xo = CX + 12 + b
     L.add(cbox(G, (xo - 1, xo + 2), (-5, 3), (66, 78), {"xz": 1, "xy": 1}) & ~((X < xo) & (L.a > 0)), 2)
     L.add(cyl(G, "x", (-1, 72), 1.8, rng=(xo + 2, xo + 3)), 7)
     # 발목 장갑(짙은): 1차 갓 모양(아래로 크게 퍼짐) → 옆은 곧게 ±11 + 아래 4칸만 1:2 로 ±13 · 앞은 1:2 로 앞·아래로 기울어 발등 위를 덮음
-    wa = 11 + np.clip(38 - Z, 0, None) / 2.0
-    yfa = -11 - np.clip(52 - Z, 0, None) / 2.0
-    ank = (dx <= wa) & (Z >= 30) & (Z <= 56) & (Y >= yfa) & (Y <= 11)
-    ank &= ((wa - dx) + (Y - yfa) >= 4) & ((wa - dx) + (11 - Y) >= 4)
-    L.add(ank & ~(L.a > 0), 2)
-    L.paint_s((Z >= 52) & (Z <= 53) & (L.a == 1), 3)                                                  # 정강이 끝 짙은 테
+    if R2:
+        yfa = -12 - np.clip(50 - Z, 0, None) / 2.0                                                    # 앞은 1:2 로 앞·아래(발등 위)
+        ank = (dx <= 8) & (Z >= 34) & (Z <= 56) & (Y >= yfa) & (Y <= 4)
+        ank &= ((8 - dx) + (Y - yfa) >= 3)
+        L.add(ank & ~(L.a > 0), 2)
+        L.add(cbox(G, (CX - 11, CX + 11), (-4, 8), (36, 40), {"xy": 2}) & ~(L.a > 0), 3)              # 정강이 양옆 끝을 잇는 짙은 바닥
+    else:
+        wa = 11 + np.clip(38 - Z, 0, None) / 2.0
+        yfa = -11 - np.clip(52 - Z, 0, None) / 2.0
+        ank = (dx <= wa) & (Z >= 30) & (Z <= 56) & (Y >= yfa) & (Y <= 11)
+        ank &= ((wa - dx) + (Y - yfa) >= 4) & ((wa - dx) + (11 - Y) >= 4)
+        L.add(ank & ~(L.a > 0), 2)
+        L.paint_s((Z >= 52) & (Z <= 53) & (L.a == 1), 3)                                              # 정강이 끝 짙은 테
     L.trim()
 
 
@@ -99,14 +126,17 @@ def foot(M, v):
     base = cbox(G, (CX - fw, CX + fw), (yt, yh), (0, 20), {"xy": 5, "+zx": 3, "-y+z": 6, "+y+z": 4})
     F.add(base, 2)
     F.add(cbox(G, (CX - fw + 3, CX + fw - 3), (yt - 3, yt + 8), (0, 11), {"x-y": 3, "-y+z": 4}) & ~(F.a > 0), 2)   # 발끝 앞 단
-    F.groove((X == CX) & (Y <= yt + 6) & (Z >= 2), 4)                                                # 발끝 가운데 홈
+    if not R2:
+        F.groove((X == CX) & (Y <= yt + 6) & (Z >= 2), 4)                                            # 발끝 가운데 홈(r2: 뺌 [유저 "발쪽 세로 갈라짐 없애자"])
     F.add(cbox(G, (CX - fw - 1, CX + fw + 1), (yt + 1, yh + 1), (0, 2), {"xy": 6}), 3)               # 발바닥(짙은 프레임)
     F.add(cbox(G, (CX - 11, CX + 11), (-24, -2), (18, 31), {"xy": 4, "-y+z": 5, "x+z": 3}) & ~(F.a > 0), 1)   # 발등 덮개(모래)
     F.rot = roty(SPLAY)
     F.trim()
 
 
-def build_all(v="a"):
+def build_all(v="a", r2=False):
+    global R2
+    R2 = r2
     M = wr.build_all(final=True)
     upper_leg(M); lower_leg(M, v); foot(M, v)
     for n in ("UpperLegL", "LowerLegL", "FootL"):
