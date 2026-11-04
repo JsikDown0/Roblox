@@ -26,6 +26,7 @@ import m2_arm_r2 as ar  # noqa: E402
 
 PAL, EMISSIVE = ar.PAL, ar.EMISSIVE
 HOL = (25.5, 0, 160)          # 홀스터 회전 중심(벨트 쪽 고정점)
+SIDE_R2 = True                # [결정 11-04 "빨강(오른 옆 블록)은 되돌리고"] 확정본은 False(r1 블록)
 R2 = False                    # r2 [유저 11-04]: 배 3겹 · 앞 옆 치마판 퍼짐 · 오른 옆 블록 길게 · 홀스터 3칸 뒤로(치마판 뒤)
 
 
@@ -57,7 +58,7 @@ def pelvis(M):
         else:
             P.add(cbox(G, sorted((sg * 11, sg * 21)), (-17, -10), (163, 175), {"-yz": 2, "xy": 2}), 1)   # 앞 주머니판
         P.add(cbox(G, sorted((sg * 4, sg * 22)), (10, 15), (162, 175), {"+yz": 2, "xy": 2}), 1)       # 뒤 판
-    if R2:
+    if R2 and SIDE_R2:
         # 오른 옆 골반 블록 [유저 11-04 빨강 "더 길어야"]: z161~178 → z146~176, 아래 바깥 1:2 로 퍼짐
         # 1차: 벨트 위(z180)까지 솟은 두꺼운 판자 → 몸에서 떨어져 보임 → 벨트 높이(z176)에서 시작하는 두께 6칸 판, z156 아래 1:2 로 바깥으로 퍼짐
         xo = -30 - np.clip(156 - Z, 0, None) / 2.0                                                    # 바깥 면(2차: z166 부터 퍼지면 날개처럼 → z156 아래만)
@@ -97,9 +98,12 @@ def holster(M, var="a"):
     return Hs
 
 
-def build_all(var="a", r2=False):
-    global R2
-    R2 = r2
+def build_all(var="a", r2=False, final=False):
+    """final=True → 허리 확정 [결정 11-04 "빨강(오른 옆 블록)은 되돌리고 허리를 확정"] = r2(배 3겹 · 앞 옆 치마판 퍼짐 · 칼집 3칸 뒤) + r1 오른 옆 블록 + 홀스터 b(20°)."""
+    global R2, SIDE_R2
+    if final:
+        var, r2 = "b", True
+    R2 = r2; SIDE_R2 = not final
     M = ar.build_all(final=True)
     pelvis(M)
     M.parts["Torso"].parent = "Pelvis"
