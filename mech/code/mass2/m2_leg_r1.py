@@ -46,17 +46,14 @@ def upper_leg(M):
         U.add(thigh & cut, 1)
         hous = cbox(G, (CX - 16, CX + 2), (-12, 11), (138, 161), {"xy": 3, "-x-z": 3}) & ~cut & ~(U.a > 0)
         U.add(hous, 3)
-        disc = cyl(G, "y", (CX - 7, 149), 6, rng=(-14, -12)) & ~(U.a == 1)
-        U.add(disc, 2)
-        rr = np.sqrt((X - (CX - 7)) ** 2 + (Z - 149) ** 2)
-        U.paint(disc & (Y == -14) & (rr >= 4.0) & (rr <= 5.0), 4)                                        # 고리
-        U.paint(disc & (Y == -14) & (rr <= 2.2), 3)                                                      # 허브
+        # (5차 [유저 "둥근 원판은 없애고"] 앞 원판 뺌)
     else:
         U.add(sh.facet_ellipsoid(G, HIP, (9, 9, 9), sh.DIRS_A), 3)                                   # 고관절 공(장갑 속)
         U.add(cbox(G, (CX - 10, CX + 10), (-10, 10), (116, 150), {"xy": 3}), 3)                       # 짙은 뼈대
         U.add(cbox(G, (CX - 15, CX + 15), (-15, 14), (122, 147), {"xy": 5, "+zx": 4, "+zy": 3, "-zy": 3, "-zx": 2}), 1)   # 허벅지 장갑
     U.emboss((dx <= 10) & (Z >= 127) & (Z <= 143) & (Y < -14) & (dx <= 10 - np.clip(129 - Z, 0, None)), 1)          # 앞 덧판 1칸
-    U.add(cbox(G, (CX - 9, CX + 9), (14, 16), (126, 146), {"x+y": 2}) & ~(U.a > 0), 2)               # 뒤 판(짙은)
+    if not R2:
+        U.add(cbox(G, (CX - 9, CX + 9), (14, 16), (126, 146), {"x+y": 2}) & ~(U.a > 0), 2)           # 뒤 판(짙은) — 5차: 뺌
     U.rot = roty(-SPLAY)
     U.trim()
 
@@ -157,6 +154,18 @@ def build_all(v="a", r2=False):
         # 3차: 치마 밑 속(짙은 프레임) — 허벅지와 치마 사이로 배경이 비치지 않게
         P = M.parts["Pelvis"]; G = P.g(); X, Y, Z = G; ax = np.abs(X)
         P.add((ax >= 7) & (ax <= 34) & (Y >= -12) & (Y <= 12) & (Z >= 161) & (Z <= 168) & (ax + np.abs(Y) <= 40) & ~(P.a > 0), 3)   # 허벅지 위(z160) 와 치마 사이만
+        # 5차 [유저 "뒷면에서 판 4개 지우고 앞면처럼 스커트 — 원본도 앞뒷면 스커트가 똑같이 보여"]
+        #   뒤 판 2(모래) 지움 → 앞 스커트(가운데 판 · 위 홈 · 옆으로 퍼지는 치마판)를 Y' = −1 − Y 로 뒤집어 뒤에 붙임(벨트 Y −14~13 기준 대칭)
+        #   왼 뒤 치마판은 칼집(X 21~29) 자리 X≥20 은 비움
+        P.a[(P.a == 1) & np.broadcast_to((Y >= 10) & (Z >= 162) & (Z <= 175) & (ax <= 22), P.a.shape)] = 0
+        Yb = np.broadcast_to(Y, P.a.shape); Xb = np.broadcast_to(X, P.a.shape); Zb = np.broadcast_to(Z, P.a.shape)
+        src = ((P.a == 1) & (Yb < 0)) | ((P.a == 3) & (np.abs(Xb) <= 3) & (Zb >= 170) & (Yb == -16))
+        idx = np.argwhere(src)
+        col = P.a[tuple(idx.T)]
+        yw = idx[:, 1] + P.lo[1]; yn = -1 - yw; jn = yn - P.lo[1]
+        ok = (jn >= 0) & (jn < P.a.shape[1]) & ~((idx[:, 0] + P.lo[0] >= 20) & (col == 1))
+        tgt = (idx[ok, 0], jn[ok], idx[ok, 2])
+        P.a[tgt] = col[ok]
     return M
 
 
