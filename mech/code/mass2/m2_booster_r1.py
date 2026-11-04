@@ -102,7 +102,8 @@ if __name__ == "__main__":
 
 
 FINAL = "P3"                  # [결정 11-04 "p3 으로 가자"]
+STOW = "S1"                   # [결정 11-04 "s1 로 가고 나이프 만들자"] 카빈 수납 = 등 대각선
 
 
-def build_final(stow=None):
+def build_final(stow=STOW):
     return build_all(FINAL, stow)
