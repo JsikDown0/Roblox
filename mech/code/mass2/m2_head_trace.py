@@ -137,6 +137,68 @@ def build(M, deep=10, parent=None):
     return H
 
 
+def build_clean(M, deep=10, parent=None):
+    """r5 [결정 11-04 "다음 판 + 색 분할이 지저분한 것도 해결"]: 실루엣·크기·위치는 색 지도에서, 안쪽 색은 지도에서 맞춘 도형으로 다시 그림.
+      사각 홈 = 지도 검정(가운데 |X|≤11)의 경계 상자 · 렌즈 = 발광 칸 무게중심 + 넓이로 반지름 · 턱 = 홈 아래 검정 · 귀 = 실루엣 + 테·가운데 원.
+      그 위에 r3 판 단차: 홈 테(짙은 회색) 1칸 돋움 · 이마 판 1칸 · 볼판 2칸(홈 옆 아래) · 위 덮개 판."""
+    xs, zs, mp, _ = cell_map()
+    X2, Z2 = np.meshgrid(xs, zs, indexing="ij")
+    dk = (mp == DARK) & (np.abs(X2) <= 11) & (Z2 >= 241)
+    sw = int(np.abs(X2[dk]).max()); s0, s1 = int(Z2[dk].min()), int(Z2[dk].max())
+    gl = mp == GLOW
+    lz = float(Z2[gl].mean()); lr = float(np.sqrt(gl.sum() / np.pi)) * 1.3                       # 발광 핵만 잡혀 작음 → 그림의 렌즈 원판 크기로
+    chin = (mp == DARK) & (Z2 < s0) & (np.abs(X2) <= 8)
+    sil = mp != BG
+    F = -deep
+    H = M.part("Head", (int(xs[0]) - 2, -26 + F, 224), (int(xs[-1]) + 3, 22, 266), pivot=(0, 0, 236), parent=parent)
+    G = H.g(); X, Y, Z = G; shp = H.a.shape
+    Xb, Yb, Zb = [np.broadcast_to(A, shp) for A in G]; ax = np.abs(Xb)
+    ix = np.clip(Xb - xs[0], 0, len(xs) - 1); iz = np.clip(Zb - zs[0], 0, len(zs) - 1)
+    inmap = (Xb >= xs[0]) & (Xb <= xs[-1]) & (Zb >= zs[0]) & (Zb <= zs[-1])
+    silb = inmap & sil[ix, iz]
+    yc0 = -1 + F / 2.0; hy = 15 + deep / 2.0
+    dep = (np.abs(Yb - yc0) <= hy) & (Zb <= 259 - np.clip(Yb - 4, 0, None) / 2.0) & (Zb <= 259 - np.clip(-(Yb - yc0) - (hy - 3), 0, None) + 1)
+    ear = ax > 12
+    ey = np.abs(Yb - 1); ez = np.abs(Zb - 247)
+    dep &= ~ear | ((ey <= 6) & (ey + ez <= 9))
+    H.a[silb & dep] = SAND
+    yfront = np.where((H.a > 0).any(1), (H.a > 0).argmax(1), -1)[:, None, :] + H.lo[1]         # 기둥 앞면 Y
+    face = (Yb >= yfront) & (Yb <= yfront) & ~ear
+    # 사각 홈(3칸) · 렌즈 · 홈 테
+    sock = (ax <= sw) & (Zb >= s0) & (Zb <= s1) & ~ear
+    H.cut(sock & (Yb < yfront + 3))
+    H.add(sock & (Yb == yfront + 3), 4)
+    lens_r = (Xb ** 2 + (Zb - lz) ** 2)
+    H.add(sock & (Yb == yfront + 2) & (lens_r <= (lr + 1.6) ** 2), 3)                              # 렌즈 테(짙은)
+    H.add(sock & (Yb == yfront + 1) & (lens_r <= lr ** 2 + 0.5), 6)                                # 렌즈(홈 바닥보다 2칸 앞)
+    H.add(sock & (Yb == yfront + 2) & (lens_r <= lr ** 2 + 0.5), 6)
+    rim = (ax <= sw + 1) & (Zb >= s0 - 1) & (Zb <= s1 + 1) & ~((ax <= sw) & (Zb >= s0) & (Zb <= s1))
+    H.emboss(rim & ~ear & (Yb < F - 8), 2)                                                         # 홈 테 1칸 돋움(앞면만 — 1차는 뒷면에도 붙음)
+    # 턱(검정 → 짙은 프레임, 1칸 들어감)
+    chb = inmap & chin[ix, iz]
+    H.cut(chb & (Yb == yfront)); H.paint(chb & (Yb == yfront + 1), 3)
+    # 이마 판 1칸 · 볼판 2칸
+    H.emboss((ax <= sw + 2) & (Zb >= s1 + 2) & (Zb <= 257) & (Yb < -10 + F), 1)
+    H.emboss((ax >= sw + 2) & (ax <= 12) & (Zb >= s0 - 3) & (Zb <= int(lz)) & (Yb < -8 + F), 1, h=2)
+    # 귀 바깥 면: 테(짙은 회색) + 가운데(짙은 프레임)
+    ring = (np.sqrt((Yb - 1) ** 2 + (Zb - 247) ** 2) <= 4.2) & (np.sqrt((Yb - 1) ** 2 + (Zb - 247) ** 2) >= 2.8)
+    surf = H.surface()                                                                             # 귀 바깥 겉면(1차는 지도 끝 X 에 칠해 안 보임)
+    P_ = np.pad(H.a > 0, 1); outward = (~P_[2:, 1:-1, 1:-1] & (Xb > 0)) | (~P_[:-2, 1:-1, 1:-1] & (Xb < 0))
+    H.paint(surf & outward & ear & ring & (ax >= 15), 2)
+    H.paint(surf & outward & ear & (np.sqrt((Yb - 1) ** 2 + (Zb - 247) ** 2) < 2.8) & (ax >= 15), 3)
+    H.add(cbox(G, (-9, 9), (F - 6, 4), (260, 261), {"xy": 2}) & ~(H.a > 0), 1)
+    H.groove((ax <= 9) & (Yb >= F - 6) & (Yb <= 4) & (Zb == 261) & ((ax == 9) | (Yb == F - 6) | (Yb == 4)), 4)
+    H.add(cyl(G, "z", (0, 0), 8, rng=(226, 241)) & ~(H.a > 0), 3)                                 # 목(머리 아랫면까지 — 1차는 떨어져 섬으로 지워짐)
+    from scipy import ndimage
+    lab, n = ndimage.label(H.a > 0)
+    if n > 1:
+        big = np.bincount(lab.ravel())[1:].argmax() + 1
+        H.a[(lab != big) & (lab > 0)] = 0
+    H.trim()
+    M.extra["head_fit"] = dict(socket_half=sw, socket_z=(s0, s1), lens_z=round(lz, 1), lens_r=round(lr, 2))
+    return H
+
+
 def ratios_concept():
     xs, zs, mp, cls = cell_map()
     v = np.bincount(mp.ravel(), minlength=7)[[SAND, GRAY, DARK, GLOW]].astype(float)          # 정리한 칸 지도 기준(머리 실루엣 안)
@@ -169,12 +231,12 @@ if __name__ == "__main__":
     mapimg = Image.fromarray(lut[mp.T[::-1]]).resize((len(xs) * 12, len(zs) * 12), Image.NEAREST)
     clsimg = Image.fromarray(lut[cls]).resize(((BOX[2] - BOX[0]) * 3, (BOX[3] - BOX[1]) * 3), Image.NEAREST)
     rows = []
-    for nm, M in (("r3 손 설계(M1)", None), ("r4 색 지도 이식", "trace")):
+    for nm, M in (("r4 색 지도 이식", "trace"), ("r5 색 지도 + 도형 정리 + 판 단차", "clean")):
         Mm = fv.Model(); h1.collar(Mm)
-        if M:
-            build(Mm, deep=10)
+        if M == "clean":
+            build_clean(Mm, deep=10); print(Mm.extra["head_fit"])
         else:
-            h1.build_head_deep(Mm, "M1", deep=10)
+            build(Mm, deep=10)
         p = Mm.parts["Head"]; _, k = ndimage.label(p.a > 0)
         rr = ratios_model(Mm)
         print(nm, "tris", 2 * greedy_quads(p.a), "섬", k - 1, "정면 색 비율 모래/짙은회색/검정/발광", (rr * 100).round(1))
@@ -189,7 +251,7 @@ if __name__ == "__main__":
     top = [con, clsimg, mapimg]
     Ht = max(i.height for i in top)
     sh = Image.new("RGB", (max(W, sum(i.width for i in top) + 64), 60 + Ht + 60 + 2 * (H + 46)), (24, 25, 28)); d = ImageDraw.Draw(sh)
-    d.text((16, 14), "새 양산기 머리 r4 — 그림 색 지도 이식 (컨셉 · 픽셀 분류 · 칸 지도)", fill=(235, 235, 235), font=ft)
+    d.text((16, 14), "새 양산기 머리 r5 — 색 지도 + 도형 정리 + 판 단차 (컨셉 · 픽셀 분류 · 칸 지도)", fill=(235, 235, 235), font=ft)
     x = 16
     for im in top:
         sh.paste(im, (x, 60)); x += im.width + 16
@@ -200,4 +262,4 @@ if __name__ == "__main__":
         for im in ims:
             sh.paste(im, (x, y0 + 26)); x += im.width + 16
         y0 += H + 46
-    p = os.path.join(out, "시안_머리r4_색지도.png"); sh.save(p); print(p, sh.size)
+    p = os.path.join(out, "시안_머리r5_정리단차.png"); sh.save(p); print(p, sh.size)
