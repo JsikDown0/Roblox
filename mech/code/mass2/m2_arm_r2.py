@@ -70,7 +70,7 @@ WRISTS = {
 }
 
 
-def wrist_joint(L, G, wrist):
+def wrist_joint(L, G, wrist, final=False):
     X, Y, Z = G; dx = np.abs(X - AX)
     if wrist == "W0":
         L.add(cyl(G, "z", (AX, 0), 7, rng=(135, 141)), 3)
@@ -86,6 +86,10 @@ def wrist_joint(L, G, wrist):
         cuff = (dx <= 9.5) & (np.abs(Y) <= 8) & (Z >= 133) & (Z <= 142) & (dx + np.abs(Y) <= 14)
         L.add(cuff & ~((dx <= 7) & (np.abs(Y) <= 6) & (Z <= 139)), 1)
         L.add(cyl(G, "z", (AX, 0), 5, rng=(134, 141)), 3)
+        if final:
+            # [결정 11-04 "W2 로 가되 손목부에 관절을 표현한 검정 작은 판 하나만 파서 넣어줘"] 소매 앞면에 1칸 파인 검정 판(6×5)
+            plate = (dx <= 3) & (Z >= 135) & (Z <= 139) & (Y <= -7)
+            L.cut(plate & (Y == -8)); L.add(plate & (Y == -7), 4)
     elif wrist == "W3":
         knuckle_hinge(L, G, [(0, 138)], (135, 141), block_y=(-5, 4), links=False)
     elif wrist == "W4":
@@ -95,7 +99,7 @@ def wrist_joint(L, G, wrist):
             L.add(cyl(G, "x", (0, 138), 2.4, rng=sorted((AX + sx * 7, AX + sx * 8))), 4)             # 원형 못(축 끝)
 
 
-def lower_arm(M, wrist="W0"):
+def lower_arm(M, wrist="W0", final=False):
     L = M.part("LowerArmL", (28, -16, 132), (62, 16, 196), pivot=ELB, parent="UpperArmL")
     G = L.g(); X, Y, Z = G; dx = np.abs(X - AX)
     knuckle_hinge(L, G, [(1.5, 188), (-2.5, 182)], (179, 191))
@@ -106,7 +110,7 @@ def lower_arm(M, wrist="W0"):
     fa &= (dx + np.abs(Y) <= np.maximum(w, d) + np.minimum(w, d) - 4)
     L.add(fa & ~(L.a > 0), 1)
     L.emboss((dx <= 8) & (Z >= 152) & (Z <= 173) & (Y < -10), 1)                                       # 앞 덧판 1칸(세로 판 — 가로줄 없음)
-    wrist_joint(L, G, wrist)
+    wrist_joint(L, G, wrist, final)
     L.trim()
     return L
 
@@ -126,9 +130,12 @@ def hand(M):
     return Hn
 
 
-def build_all(var="A", wrist="W0"):
+def build_all(var="A", wrist="W0", final=False):
+    """final=True → 팔 확정 [결정 11-04] = 어깨 밑 관절 A · 바이슨식 팔꿈치 · 손목 W2 소매 + 앞 검정 판."""
+    if final:
+        var, wrist = "A", "W2"
     M = sh.build_all(final=True)
-    upper_arm(M, var); lower_arm(M, wrist); hand(M)
+    upper_arm(M, var); lower_arm(M, wrist, final); hand(M)
     for n in ("UpperArmL", "LowerArmL", "HandL"):
         M.mirror(n, n[:-1] + "R")
     return M
