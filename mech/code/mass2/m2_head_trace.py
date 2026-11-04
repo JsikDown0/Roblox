@@ -138,6 +138,7 @@ def build(M, deep=10, parent=None):
 
 
 EAR_GEOM = False
+R7 = False       # r7 [결정 11-04]: r5 에서 — 머리 둘레 디테일(r6) 없음 · 귀 색 = r6(회색 테 + 가운데 원 하나) · 귀 모양 = 적층 덜(원통 + 45° 모따기) · 위에서 보면 뒤가 넓고 앞으로 좁아짐
 
 
 def build_clean(M, deep=10, parent=None):
@@ -164,8 +165,10 @@ def build_clean(M, deep=10, parent=None):
     ear = ax > 12
     ey = np.abs(Yb - 1); ez = np.abs(Zb - 247)
     dep &= ~ear | ((ey <= 6) & (ey + ez <= 9))
-    if EAR_GEOM:
+    if EAR_GEOM or R7:
         silb = silb & ~ear                                                                         # r6: 귀는 지도 대신 도형으로(아래)
+    if R7:
+        dep &= (ax <= 12 - np.clip(14 - Yb, 0, None) * 0.09)                                       # 뒤 |X| 12 → 앞 약 8.4(앞으로 좁아짐)
     H.a[silb & dep] = SAND
     yfront = np.where((H.a > 0).any(1), (H.a > 0).argmax(1), -1)[:, None, :] + H.lo[1]         # 기둥 앞면 Y
     face = (Yb >= yfront) & (Yb <= yfront) & ~ear
@@ -184,12 +187,20 @@ def build_clean(M, deep=10, parent=None):
     H.cut(chb & (Yb == yfront)); H.paint(chb & (Yb == yfront + 1), 3)
     if not EAR_GEOM:
         H.emboss((ax <= sw + 2) & (Zb >= s1 + 2) & (Zb <= 257) & (Yb < -10 + F), 1)
-        H.emboss((ax >= sw + 2) & (ax <= 12) & (Zb >= s0 - 3) & (Zb <= int(lz)) & (Yb < -8 + F), 1, h=2)
+        tap = (ax <= 12 - np.clip(14 - Yb, 0, None) * 0.09 + 1) if R7 else True                   # r7: 볼판도 좁아지는 선 안(1차는 앞 모서리를 다시 넓혀 계단 턱)
+        H.emboss((ax >= sw + 2) & (ax <= 12) & (Zb >= s0 - 3) & (Zb <= int(lz)) & (Yb < -8 + F) & tap, 1, h=2)
         ring = (np.sqrt((Yb - 1) ** 2 + (Zb - 247) ** 2) <= 4.2) & (np.sqrt((Yb - 1) ** 2 + (Zb - 247) ** 2) >= 2.8)
         surf = H.surface()
         P_ = np.pad(H.a > 0, 1); outward = (~P_[2:, 1:-1, 1:-1] & (Xb > 0)) | (~P_[:-2, 1:-1, 1:-1] & (Xb < 0))
-        H.paint(surf & outward & ear & ring & (ax >= 15), 2)
-        H.paint(surf & outward & ear & (np.sqrt((Yb - 1) ** 2 + (Zb - 247) ** 2) < 2.8) & (ax >= 15), 3)
+        if not R7:
+            H.paint(surf & outward & ear & ring & (ax >= 15), 2)
+            H.paint(surf & outward & ear & (np.sqrt((Yb - 1) ** 2 + (Zb - 247) ** 2) < 2.8) & (ax >= 15), 3)
+        else:
+            rr = np.sqrt((Yb - 1) ** 2 + (Zb - 247) ** 2)
+            pod = (ax >= 11) & (ax <= 16) & (rr <= 6.6 - np.clip(ax - 14, 0, None))                 # 원통 + 바깥 모서리 45°(반구보다 계단 적음)
+            H.add(pod & ~(H.a > 0), SAND)
+            H.add((ax >= 11) & (ax <= 12) & (rr <= 7.8) & (rr >= 5.0), 2)                           # 귀를 감싸는 회색 테(머리 쪽)
+            H.paint(pod & (ax >= 15) & (rr <= 2.6), 2)                                              # 가운데 회색 원 하나
         H.add(cbox(G, (-9, 9), (F - 6, 4), (260, 261), {"xy": 2}) & ~(H.a > 0), 1)
         H.groove((ax <= 9) & (Yb >= F - 6) & (Yb <= 4) & (Zb == 261) & ((ax == 9) | (Yb == F - 6) | (Yb == 4)), 4)
     else:
@@ -256,10 +267,10 @@ if __name__ == "__main__":
     clsimg = Image.fromarray(lut[cls]).resize(((BOX[2] - BOX[0]) * 3, (BOX[3] - BOX[1]) * 3), Image.NEAREST)
     rows = []
 
-    for nm, M in (("r5 (전)", "clean"), ("r6 귀 반구 + 회색 테·원 · 볼판 · 위 해치", "r6")):
+    for nm, M in (("r5 (전)", "clean"), ("r7 = r5 + 귀(원통·모따기, 회색 테·원) + 앞으로 좁아지는 머리", "r7")):
         Mm = fv.Model(); h1.collar(Mm)
-        if M in ("clean", "r6"):
-            globals()["EAR_GEOM"] = (M == "r6")
+        if M in ("clean", "r6", "r7"):
+            globals()["EAR_GEOM"] = (M == "r6"); globals()["R7"] = (M == "r7")
             build_clean(Mm, deep=10)
         else:
             build(Mm, deep=10)
@@ -267,7 +278,7 @@ if __name__ == "__main__":
         rr = ratios_model(Mm)
         print(nm, "tris", 2 * greedy_quads(p.a), "섬", k - 1, "정면 색 비율 모래/짙은회색/검정/발광", (rr * 100).round(1))
         ims = [vp.render(Mm.blocks(), h1.PAL, h1.EMISSIVE, yaw=y, pitch=pt, ppc=8, ss=2, ao_amt=0.5, bg=(200, 200, 200), light=(-0.75, -0.55, 0.6))
-               for y, pt in ((0, 3), (-30, 10), (-90, 3), (150, 12))]
+               for y, pt in ((0, 3), (-30, 10), (-90, 3), (150, 12), (0, 85))]
         rows.append(("%s — 정면 칸 색: 모래 %.0f%% · 짙은 회색 %.0f%% · 검정 %.0f%% · 발광 %.0f%%" % ((nm,) + tuple(rr * 100)), ims))
     rc = ratios_concept()
     print("컨셉 픽셀 비율", (rc * 100).round(1))
@@ -277,7 +288,7 @@ if __name__ == "__main__":
     top = [con, clsimg, mapimg]
     Ht = max(i.height for i in top)
     sh = Image.new("RGB", (max(W, sum(i.width for i in top) + 64), 60 + Ht + 60 + 2 * (H + 46)), (24, 25, 28)); d = ImageDraw.Draw(sh)
-    d.text((16, 14), "새 양산기 머리 r6 — 귀 · 머리 둘레 디테일 (컨셉 · 픽셀 분류 · 칸 지도)", fill=(235, 235, 235), font=ft)
+    d.text((16, 14), "새 양산기 머리 r7 — r5 기반 · 귀 · 앞으로 좁아지는 머리 (컨셉 · 픽셀 분류 · 칸 지도)", fill=(235, 235, 235), font=ft)
     x = 16
     for im in top:
         sh.paste(im, (x, 60)); x += im.width + 16
@@ -288,4 +299,4 @@ if __name__ == "__main__":
         for im in ims:
             sh.paste(im, (x, y0 + 26)); x += im.width + 16
         y0 += H + 46
-    p = os.path.join(out, "시안_머리r6_귀디테일.png"); sh.save(p); print(p, sh.size)
+    p = os.path.join(out, "시안_머리r7.png"); sh.save(p); print(p, sh.size)
