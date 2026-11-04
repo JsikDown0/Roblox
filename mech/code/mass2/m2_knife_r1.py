@@ -118,3 +118,10 @@ if __name__ == "__main__":
             sh.paste(im, (x, y + (H - im.height) // 2)); x += im.width + 14
         y += H + 8
     p = os.path.join(out, "시안_나이프r1.png"); sh.save(p); print(p, sh.size)
+
+
+FINAL = "K2"                  # [결정 11-04 "k2 로 하자"]
+
+
+def build_final():
+    return build_all(FINAL)
