@@ -183,9 +183,13 @@ def build_torso_r3(M, gun="A"):
     return T
 
 
-def build_all(r2=True):
+def build_all(r2=True, final=False):
+    """final=True → 가슴 확정 [결정 11-04 "A로 가자"] = r3 + 총구 A(어깨 앞 45° 면 매립)."""
     M = fv.Model()
-    (build_torso_r2 if r2 else build_torso)(M)
+    if final:
+        build_torso_r3(M, "A")
+    else:
+        (build_torso_r2 if r2 else build_torso)(M)
     H = ht.build_final(M, parent="Torso")
     return M
 
