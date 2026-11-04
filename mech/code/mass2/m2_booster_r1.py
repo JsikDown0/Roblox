@@ -99,3 +99,10 @@ if __name__ == "__main__":
             sh.paste(im, (x, y + (H - im.height) // 2)); x += im.width + 14
         y += H + 8
     p = os.path.join(out, "시안_부스터r1.png"); sh.save(p); print(p, sh.size)
+
+
+FINAL = "P3"                  # [결정 11-04 "p3 으로 가자"]
+
+
+def build_final(stow=None):
+    return build_all(FINAL, stow)
