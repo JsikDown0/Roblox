@@ -100,6 +100,89 @@ def build_torso_r2(M):
     return T
 
 
+GUNS = {
+    "A": "어깨 앞 45° 면에 매립(사각 소켓 안 총구 — 튀어나오지 않음)",
+    "B": "목 뒤 돌기와 한 덩어리(돌기 앞면이 총구 함 · 총열 2칸)",
+    "C": "어깨 위 쌍열 포드(작은 함 + 총열 2개씩)",
+    "D": "원본 자리(멍에·가슴판 이음 · 사각 소켓 매립)",
+}
+
+
+def _front_y(T):
+    """(x, z) 마다 앞면(가장 작은 Y) 칸의 Y — 없는 기둥은 큰 값."""
+    o = T.a > 0
+    fy = np.where(o.any(1), o.argmax(1), 10 ** 6) + T.lo[1]
+    return fy[:, None, :]
+
+
+def _socket(T, G, xc, zc, hw, hz, depth=2, r=2.0):
+    """앞면 매립 총구: 앞면에서 depth 칸 파인 사각 소켓 + 바닥(검정) + 강철 총구(앞면 높이까지) + 구멍."""
+    X, Y, Z = G
+    fy = _front_y(T)
+    win = (np.abs(X - xc) <= hw) & (np.abs(Z - zc) <= hz)
+    fyc = int(np.min(np.where(np.broadcast_to(win, T.a.shape) & (T.a > 0), np.broadcast_to(Y, T.a.shape), 10 ** 6)))
+    T.cut(win & (Y < fy + depth))
+    T.add(win & (Y >= fy + depth) & (Y <= fy + depth), 4)
+    tube = cyl(G, "y", (xc, zc), r, rng=(-40, 40)) & (Y >= fy) & (Y <= fy + depth + 1)
+    T.add(tube, 7)                                                                                  # 총구 테 = 앞면과 같은 높이(1차: 튀어나옴 · 2차: 소켓 안에 묻혀 그늘 → 사각 창처럼 보임)
+    bore = cyl(G, "y", (xc, zc), r - 1.3, rng=(-40, 40))
+    T.cut(bore & (Y <= fy + depth)); T.add(bore & (Y == fy + depth + 1), 4)                       # 구멍 바닥 검정
+
+
+def build_torso_r3(M, gun="A"):
+    """r3 [유저 11-04 "원본과 달리 목이 갇힌 것처럼 보여 답답 · 총구 2개도 어색하게 붙음 → 여러 디자인"]
+    [관찰] 원본: 멍에 윗면은 턱(z≈238)보다 조금 낮은 평평한 선 → 머리는 통째로 위에 떠 있고 사이로 짙은 목이 보임.
+      목 양옆 뒤쪽에만 낮은 돌기 2개(귀보다 바깥 · 귀 아래). r2 는 멍에가 z243 까지 올라와 머리 아랫부분·귀 밑을 감쌈 → 갇혀 보임.
+    → 멍에 윗면 z236 평평 · 목 앞 U 홈 · 뒤 돌기 2 · 목 받침(짙은) / 총구 = GUNS 4안."""
+    T = M.part("Torso", (-36, -32, 182), (37, 28, 250), pivot=(0, 0, 200))
+    G = T.g(); X, Y, Z = G; ax = np.abs(X)
+    T.add(cbox(G, (-24, 24), (-12, 16), (188, 234), {"xy": 4}), 3)
+    yf_g = -12 - (243 - Z) / 2.0
+    yf_s = np.where(Z >= 207, -24.0, -24 + (207 - Z) / 2.0)
+    yb = np.where(Z >= 231, 12 + (243 - Z) / 2.0, np.where(Z >= 212, 18.0, 18 - (212 - Z) / 2.0))
+    TOP = 233                                                                                     # 1차 236: 턱 바로 밑이라 머리가 멍에에 얹힌 듯 · 목 안 보임 → 3칸 내림
+    w_g = 28 - np.clip(Z - (TOP - 2), 0, None)                                                     # 어깨 바깥 위 모서리 45°(2칸)
+    w_s = 28 - np.clip(204 - Z, 0, None) * 0.7
+    yoke = (ax <= w_g) & (Z >= 222) & (Z <= TOP) & (Y >= yf_g) & (Y <= yb)
+    yoke &= (Y >= yf_g + np.clip(ax - 20, 0, None)) & (Y <= yb - np.clip(ax - 24, 0, None))
+    yoke &= (Y >= yf_g + np.clip(Z - (TOP - 1), 0, None) * 2)                                      # 앞 윗모서리 1칸 깎기
+    T.add(yoke, 2)
+    back = (ax <= 26) & (Z >= 196) & (Z < 222) & (Y >= 0) & (Y <= yb) & (Y <= yb - np.clip(ax - 22, 0, None))
+    T.add(back, 2)
+    # 목 앞 U 홈(앞에서 짙은 목이 보이게) + 목 받침
+    T.cut((ax <= 10) & (Y <= 2) & (Z >= 232) & (ax <= 10 - np.clip(232 - Z, 0, None)))
+    T.add(cbox(G, (-10, 10), (-10, 9), (230, TOP + 1), {"xy": 3, "-yz": 1}) & ~(T.a > 0), 3)              # 목 받침(멍에 위 1칸 · 짙은)
+    # 뒤 돌기 2(귀 바깥·아래, 목 뒤 양옆) — 원본 멍에 위 짙은 덩어리
+    if gun != "B":
+        for sg in (1, -1):
+            x0, x1 = (17, 25) if sg > 0 else (-25, -17)
+            T.add(cbox(G, (x0, x1), (-6, 10), (TOP + 1, TOP + 4), {"-yz": 2, "xz": 1}), 2)
+    plate = (ax <= w_s) & (Z >= 194) & (Z <= 221) & (Y >= yf_s) & (Y <= 6)
+    plate &= (Y >= yf_s + np.clip(ax - 16, 0, None))
+    T.add(plate, 1)
+    T.emboss((ax <= 15 - np.clip(214 - Z, 0, None) / 2.0) & (Z >= 199) & (Z <= 219) & (Y < -23) & (Z >= 207), 1)
+    T.groove((Z == 221) & (ax <= 28) & (Y <= -16), 4)
+    T.add(cbox(G, (-14, 14), (-16, 0), (188, 193), {"-yz": 2, "xy": 2}), 1)
+    for sg in (1, -1):
+        if gun == "A":
+            _socket(T, G, sg * 21, 228, 4, 3, depth=2, r=2.8)
+        elif gun == "D":
+            _socket(T, G, sg * 22, 224, 4, 3, depth=2, r=2.8)
+        elif gun == "B":
+            x0, x1 = (16, 25) if sg > 0 else (-25, -16)
+            T.add(cbox(G, (x0, x1), (-10, 10), (TOP + 1, TOP + 6), {"-yz": 2, "xz": 2, "+yz": 2}), 2)
+            T.add(cyl(G, "y", (sg * 20.5, TOP + 3.5), 2.6, rng=(-15, -10)), 7)                    # 1차 r2·2칸 → 돌기처럼 보여 키움
+            T.cut(cyl(G, "y", (sg * 20.5, TOP + 3.5), 1.3, rng=(-16, -12)))
+        elif gun == "C":
+            xc = sg * 22
+            T.add(cbox(G, (xc - 5, xc + 5), (-10, 6), (TOP + 1, TOP + 6), {"-yz": 2, "xy": 1}), 2)
+            for dx in (-2.6, 2.6):
+                T.add(cyl(G, "y", (xc + dx, TOP + 3.5), 2.0, rng=(-17, -10)), 7)                  # 1차 r1.8·5칸 → 점처럼 보여 키움
+                T.cut(cyl(G, "y", (xc + dx, TOP + 3.5), 0.9, rng=(-18, -14)))
+    T.trim()
+    return T
+
+
 def build_all(r2=True):
     M = fv.Model()
     (build_torso_r2 if r2 else build_torso)(M)
