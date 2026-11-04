@@ -24,6 +24,7 @@ import mass_final as MF  # noqa: E402
 COLORS = {"a": None, "b": (150, 136, 100), "c": (70, 74, 58)}
 NAMES = {"a": "색 a 짙은 쇠 몸 + 올리브 문", "b": "색 b 모래·카키", "c": "색 c 짙은 올리브"}
 X0, X1, Y0, Y1, Z0, Z1 = -24, 24, 40, 61, 194, 257
+BIG = dict(X1=29, Y1=70, Z0=188, Z1=262)                       # r2 [결정 11-04 "더 육중하게 — 크기·두께 키우자"]
 
 
 def pal(col):
@@ -45,12 +46,27 @@ def bell(G, base, d, r0=5.5, r1_=8.5, L=9):
     return shell, inner
 
 
-def build_container(M, col="b", noz="N1"):
+def beam(G, a, b, w, h):
+    """a→b 각진 사각 단면 붐(폭 w · 높이 h, 모서리 1칸 깎음)."""
+    import mass_weapon_r1 as w1
+    a = np.asarray(a, float); b = np.asarray(b, float); d = b - a; L = np.linalg.norm(d); d /= L
+    up = np.array((0, 0, 1.0)) if abs(d[2]) < 0.9 else np.array((0, 1.0, 0))
+    e2 = up - d * (up @ d); e2 /= np.linalg.norm(e2); e3 = np.cross(d, e2)
+    X, Y, Z = G; dx, dy, dz = X - a[0], Y - a[1], Z - a[2]
+    t = dx * d[0] + dy * d[1] + dz * d[2]; u = dx * e2[0] + dy * e2[1] + dz * e2[2]; v = dx * e3[0] + dy * e3[1] + dz * e3[2]
+    return (t >= 0) & (t <= L) & (np.abs(u) <= h) & (np.abs(v) <= w) & (np.abs(u) + np.abs(v) <= w + h - 1)
+
+
+def build_container(M, col="b", noz="N1", big=False):
+    global X0, X1, Y0, Y1, Z0, Z1
+    if big:
+        X1, Y1, Z0, Z1 = BIG["X1"], BIG["Y1"], BIG["Z0"], BIG["Z1"]; X0 = -X1
     body, door = (2, 1) if col == "a" else (9, 9)
     C = M.part("Container", (X0 - 14, Y0 - 2, Z0 - 22), (X1 + 14, Y1 + 12, Z1 + 3), pivot=(0, Y0, 220), parent="Torso")
     G = C.g(); X, Y, Z = G
     C.add(cbox(G, (X0, X1), (Y0, Y1), (Z0, Z1), {"xy": 3, "xz": 3, "yz": 3}), body)
-    C.paint_s((np.abs(X) >= X1 - 2) | (Z <= Z0 + 2) | (Z >= Z1 - 2), 3)                        # 둘레 짙은 테
+    rim = 1 if big else 2                                                                       # r2: 테를 가장자리만(몸색이 보이게)
+    C.paint_s(((np.abs(X) >= X1 - rim) | (Z <= Z0 + rim) | (Z >= Z1 - rim)) & ((Y >= Y1 - 2) | (Y <= Y0 + 1) | (np.abs(X) >= X1 - rim)) & ((np.abs(X) >= X1 - rim) | (Y >= Y1 - 2) | (Y <= Y0 + 1) | (Z <= Z0 + rim) | (Z >= Z1 - rim)), 3)
     door_m = (np.abs(X) <= X1 - 4) & (Z >= Z0 + 5) & (Z <= Z1 - 5) & (Y == Y1)
     C.add(door_m & ~(C.a > 0) | (door_m), door)
     C.emboss((np.abs(X) <= X1 - 5) & (Z >= Z0 + 6) & (Z <= Z1 - 6) & (Y > Y1), door)          # 문 1칸 돋움
@@ -67,17 +83,22 @@ def build_container(M, col="b", noz="N1"):
         C.add(box(G, x=sorted((s * (X1 + 1), s * (X1 + 3))), y=(50, 52), z=hz) &
               ~box(G, x=sorted((s * (X1 + 1), s * (X1 + 1))), y=(50, 52), z=(hz[0] + 2, hz[1] - 2)), 3)
     # 노즐 연결
-    if noz == "N1":
+    if noz == "N0":
+        pass
+    elif noz == "N1":
         for s in (1, -1):
             C.add(cbox(G, sorted((s * 7, s * 19)), (44, 56), (Z0 - 4, Z0), {"xy": 2}), 3)          # 바닥 받침
             sh, inn = bell(G, (s * 13, 52, Z0 - 3), (0, 0.7, -0.7))
             C.add(sh, 2); C.cut(inn); C.add(bell(G, (s * 13, 52, Z0 - 3), (0, 0.7, -0.7), r0=3.5, r1_=6.5, L=2)[0] & ~(C.a > 0), 4)
     else:
         for s in (1, -1):
-            C.add(cbox(G, sorted((s * (X1), s * (X1 + 5))), (44, 56), (Z0 + 2, Z0 + 18), {"xy": 1}), 3)   # 옆 받침
-            sh, inn = bell(G, (s * (X1 + 3), 54, Z0 + 10), (0, 1, 0))
-            C.add(sh, 2); C.cut(inn); C.add(bell(G, (s * (X1 + 3), 54, Z0 + 10), (0, 1, 0), r0=3.5, r1_=6.5, L=2)[0] & ~(C.a > 0), 4)
+            yb = Y1 - 10
+            C.add(cbox(G, sorted((s * (X1), s * (X1 + 5))), (yb - 8, yb + 4), (Z0 + 2, Z0 + 18), {"xy": 1}), 3)   # 옆 받침
+            sh, inn = bell(G, (s * (X1 + 3), yb, Z0 + 10), (0, 1, 0))
+            C.add(sh, 2); C.cut(inn); C.add(bell(G, (s * (X1 + 3), yb, Z0 + 10), (0, 1, 0), r0=3.5, r1_=6.5, L=2)[0] & ~(C.a > 0), 4)
     C.trim()
+    if big:
+        return crane_big(M, body)
     # 크레인
     K = M.part("Crane", (-48, -36, 248), (-4, 60, 286), pivot=(-15, 50, Z1), parent="Container")
     G = K.g(); X, Y, Z = G
@@ -98,9 +119,31 @@ def build_container(M, col="b", noz="N1"):
     return M
 
 
-def build_all(col="b", noz="N1"):
+def crane_big(M, body):
+    """r2 굵은 각진 크레인: 받침 상자 → 붐 1(위·앞) → 꺾임 관절 → 붐 2(앞으로 오른 어깨 위) + 크롬 실린더 2 + 굵은 두 갈래 집게."""
+    K = M.part("Crane", (-56, -44, Z1 - 2), (-2, Y1 + 4, Z1 + 34), pivot=(-18, Y1 - 12, Z1), parent="Container")
+    G = K.g(); X, Y, Z = G
+    A = np.array((-18, Y1 - 12, Z1 + 6)); B = np.array((-22, Y1 - 22, Z1 + 24)); Cc = np.array((-34, -18, Z1 + 12))
+    K.add(cbox(G, (-28, -8), (Y1 - 22, Y1 - 2), (Z1, Z1 + 7), {"xy": 3, "+z-y": 2}), 3)           # 받침 상자
+    K.add(cyl(G, "x", (A[1], A[2]), 5.5, rng=(-27, -9)), 3)                                       # 받침 축
+    K.add(beam(G, A, B, 4.5, 5), body)                                                           # 붐 1
+    K.add(cyl(G, "x", (B[1], B[2]), 6.0, rng=(-29, -15)), 3)                                      # 꺾임 관절
+    K.add(beam(G, B, Cc, 4.0, 4.5), body)                                                        # 붐 2
+    K.groove(beam(G, B + (0, -4, 0), Cc + (0, 6, 0), 4.0, 0.5) & (X <= -26.5), 4)                # 붐 옆 홈
+    for dx in (-25, -19):                                                                          # 크롬 실린더 2(붐 아래)
+        K.add(r1.seg(G, (dx, Y1 - 16, Z1 + 4), (dx - 3, Y1 - 44, Z1 + 12), 1.8), 8)
+        K.add(r1.seg(G, (dx, Y1 - 16, Z1 + 4), (dx - 1, Y1 - 26, Z1 + 7), 2.6), 3)
+    K.add(cbox(G, (-40, -28), (Cc[1] - 3, Cc[1] + 5), (Cc[2] - 5, Cc[2] + 5), {"xy": 2}), 3)      # 집게 손목 상자
+    for dz in (-1, 1):                                                                              # 굵은 두 갈래 집게
+        K.add(beam(G, Cc + (0, -3, dz * 2), Cc + (0, -11, dz * 7), 2.5, 2.2), 3)
+        K.add(beam(G, Cc + (0, -11, dz * 7), Cc + (0, -18, dz * 3), 2.3, 2.0), 3)
+    K.trim()
+    return M
+
+
+def build_all(col="b", noz="N1", big=False):
     M = MF.build_armed()
-    build_container(M, col, noz)
+    build_container(M, col, noz, big)
     M.extra.update({"name": "BISON", "designation": "ST-10E", "variant": "engineer"})
     return M
 
@@ -116,15 +159,17 @@ if __name__ == "__main__":
     f = ImageFont.truetype(FN, 20); ft = ImageFont.truetype(FN, 26)
     AS = MF.REST_POSE
     rows = []
-    for col, noz in (("a", "N1"), ("b", "N1"), ("c", "N1"), ("b", "N2")):
-        M = build_all(col, noz)
-        if (col, noz) == ("b", "N1"):
+    R2 = len(sys.argv) > 2 and sys.argv[2] == "r2"
+    combos = (("c", "N2"), ("c", "N0")) if R2 else (("a", "N1"), ("b", "N1"), ("c", "N1"), ("b", "N2"))
+    for col, noz in combos:
+        M = build_all(col, noz, big=R2)
+        if (col, noz) in (("b", "N1"), ("c", "N2")):
             cm.check(M)
             print(w1.overlaps(M, AS, [("Crane", ("Head", "ShoulderR", "UpperArmR", "PlateF", "Torso")), ("Container", ("ShoulderL", "ShoulderR", "PlateB", "UpperArmL", "UpperArmR", "Head"))]))
         P = pal(col)
         ims = [vp.render(M.blocks(pose=l4.aim(M, AS)[0], skip=("RifleStowed",)), P, MF.EMISSIVE, yaw=y, pitch=p, ppc=1.9, ss=2, ao_amt=0.5,
                          bg=(132, 132, 132), light=(-0.75, -0.55, 0.6), metal=MF.METAL) for y, p in ((0, 2), (-35, 8), (-90, 2), (150, 12), (200, 10))]
-        rows.append(("%s · 노즐 %s" % (NAMES[col], "N1 아래" if noz == "N1" else "N2 옆"), ims))
+        rows.append(("%s%s · 노즐 %s" % ("r2 크게·두껍게 · " if R2 else "", NAMES[col], {"N0": "없음", "N1": "N1 아래", "N2": "N2 옆"}[noz]), ims))
     con = Image.open(os.path.join(HERE, "..", "..", "docs", "레퍼런스", "양산형", "공병형", "concept_e1_컨테이너.png")).convert("RGB")
     H = max(i.height for _, ims in rows for i in ims)
     cc = con.resize((int(con.width * H / con.height), H))
@@ -136,4 +181,4 @@ if __name__ == "__main__":
         d.text((16, y0 - 2), nm, fill=(255, 190, 90), font=f)
         for im in ims:
             sh.paste(im, (x, y0 + 26)); x += im.width + 16
-    p = os.path.join(out, "시안_공병형r1.png"); sh.save(p); print(p, sh.size)
+    p = os.path.join(out, "시안_공병형%s.png" % ("r2" if R2 else "r1")); sh.save(p); print(p, sh.size)
