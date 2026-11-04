@@ -70,6 +70,44 @@ def build_head(M, v="M1", parent=None, tall=0):
     return H
 
 
+def build_head_deep(M, v="M1", parent=None, deep=10, back_taper=True):
+    """r3 [결정 11-04 "길게 = 앞뒤 길이. 위아래는 오히려 낮아서 귀여운 게 좋음"]: 높이는 r1 그대로(z 236~259),
+    머리통 앞뒤를 deep 칸 늘임(앞으로 deep · 뒤는 그대로) → 정면 얼굴은 같고 옆에서 길쭉한 쐐기. 뒤 윗모서리 1:2 로 낮아짐."""
+    p = V[v]; F = -deep
+    H = M.part("Head", (-24, -24 + F, 226), (25, 22, 264), pivot=(0, 0, 236), parent=parent)
+    G = H.g(); X, Y, Z = G; ax = np.abs(X)
+    H.add(cyl(G, "z", (0, 0), 8, rng=(228, 237)), 3)
+    yc0 = -1 + F / 2.0; hy = 15 + deep / 2.0
+    ay = np.abs(Y - yc0)
+    body = (ax <= 14) & (ay <= hy) & (Z >= 236) & (Z <= 259) & (ax + ay <= 14 + hy - 5)
+    body &= (Z <= 259 - np.clip(ax - 11, 0, None)) & (Z <= 259 - np.clip(-(Y - yc0) - (hy - 3), 0, None))
+    if back_taper:
+        body &= (Z <= 259 - np.clip(Y - 4, 0, None) / 2.0)                                         # 뒤 윗모서리 1:2
+    H.add(body, 1)
+    H.add(cbox(G, (-9, 9), (F - 6, 4), (259, 261), {"xy": 2}), 1)                                 # 위 덮개 판(앞뒤로 긴)
+    H.groove((ax <= 9) & (Y >= F - 6) & (Y <= 4) & (Z == 260) & ((ax == 9) | (Y == F - 6) | (Y == 4)), 4)
+    zc = 248.5
+    yf = -16 + F                                                                                  # 앞면
+    sock = (ax <= p["sw"]) & (np.abs(Z - zc) <= p["sh"]) & (Y <= yf + 6)
+    H.cut(sock)
+    H.add((ax <= p["sw"]) & (np.abs(Z - zc) <= p["sh"]) & (Y == yf + 7), 4)
+    H.emboss((ax <= p["sw"] + 2) & (np.abs(Z - zc) <= p["sh"] + 2) & ((ax > p["sw"]) | (np.abs(Z - zc) > p["sh"])) & (Y < yf + 4), 2)
+    H.add(cyl(G, "y", (0, zc), p["lr"] + 2.5, rng=(yf + 5, yf + 6)), 3)
+    H.add(cyl(G, "y", (0, zc), p["lr"] - 0.5, rng=(yf + 4, yf + 5)), 6)
+    if p["brow"]:
+        H.add((ax <= p["sw"] + 3) & (Z >= zc + p["sh"] + 1) & (Z <= zc + p["sh"] + 2) & (Y >= yf - 2) & (Y <= yf + 2), 1)
+    H.add(cbox(G, (-6, 6), (yf + 1, yf + 8), (232, 239), {"xy": 2, "-y-z": 2}), 3)
+    H.emboss((ax >= 10) & (ax <= 13) & (Z >= 237) & (Z <= 247) & (Y <= yf + 10), 1, h=2)
+    for s in (1, -1):
+        lo_, hi_ = sorted((s * 14, s * 19))
+        ear = (np.abs(Y - 1) <= 5) & (np.abs(Z - 247) <= 5) & (np.abs(Y - 1) + np.abs(Z - 247) <= 7) & (X >= lo_) & (X <= hi_)
+        H.add(ear, 1)
+        H.add(ear & (ax >= 18) & (np.abs(Y - 1) + np.abs(Z - 247) <= 3.5), 2)
+        H.add((ax >= 14) & (ax <= 15) & (np.abs(Y - 1) <= 6) & (np.abs(Z - 247) <= 6) & (np.abs(Y - 1) + np.abs(Z - 247) <= 8.5) & (H.a == 0), 2)
+    H.trim()
+    return H
+
+
 def collar(M):
     """비교용 회색 깃 + 흉판 윗부분(몸통 시안 전 임시)."""
     T = M.part("CollarStub", (-40, -24, 205), (41, 22, 240))
@@ -92,9 +130,14 @@ if __name__ == "__main__":
     mn = Image.open(os.path.join(R, "concept_v1_메인.png")).convert("RGB")
     con = Image.open(os.path.join(R, "concept_v1_삼면도.png")).convert("RGB")
     TALL = int(sys.argv[2]) if len(sys.argv) > 2 else 0
+    DEEP = int(sys.argv[3]) if len(sys.argv) > 3 else 0
     rows = []
     for v in ("M1", "M2", "M3"):
-        M = fv.Model(); collar(M); build_head(M, v, tall=TALL)
+        M = fv.Model(); collar(M)
+        if DEEP:
+            build_head_deep(M, v, deep=DEEP)
+        else:
+            build_head(M, v, tall=TALL)
         p = M.parts["Head"]; _, k = ndimage.label(p.a > 0)
         print(v, "Head tris", 2 * greedy_quads(p.a), "섬", k - 1)
         ims = [vp.render(M.blocks(), PAL, EMISSIVE, yaw=y, pitch=pt, ppc=8, ss=2, ao_amt=0.5, bg=(200, 200, 200), light=(-0.75, -0.55, 0.6))
@@ -106,10 +149,10 @@ if __name__ == "__main__":
     W = max(sum(i.width for i in ims) for _, ims in rows) + 16 * 6
     W = max(W, sum(c.width for c, _ in refs) + 16 * 4)
     sh = Image.new("RGB", (W, 60 + 4 * (H + 46)), (24, 25, 28)); d = ImageDraw.Draw(sh)
-    d.text((16, 14), "새 표준 양산기 ST-10 머리 r%s — 팔각 머리통 · 사각 홈 속 둥근 렌즈 · 귀 포드" % ("2 (9칸 길게 · 폭 좁게 · 위로 좁아짐 · 렌즈 링 두껍게 · 홈 테·볼판 단차)" if TALL else "1"), fill=(235, 235, 235), font=ft)
+    d.text((16, 14), "새 표준 양산기 ST-10 머리 r%s — 팔각 머리통 · 사각 홈 속 둥근 렌즈 · 귀 포드" % ("3 (높이 r1 그대로 · 앞뒤 %d칸 길게 · 뒤 윗모서리 낮아짐)" % DEEP if DEEP else "2 (9칸 길게 · 폭 좁게 · 위로 좁아짐 · 렌즈 링 두껍게 · 홈 테·볼판 단차)" if TALL else "1"), fill=(235, 235, 235), font=ft)
     for r_, (nm, ims) in enumerate([("컨셉", [c for c, _ in refs])] + rows):
         y0 = 60 + r_ * (H + 46); x = 16
         d.text((16, y0 - 2), nm, fill=(255, 190, 90), font=f)
         for im in ims:
             sh.paste(im, (x, y0 + 26)); x += im.width + 16
-    p = os.path.join(out, "시안_머리r1.png" if not TALL else "시안_머리r2_길쭉.png"); sh.save(p); print(p, sh.size)
+    p = os.path.join(out, "시안_머리r3_앞뒤길게.png" if DEEP else ("시안_머리r1.png" if not TALL else "시안_머리r2_길쭉.png")); sh.save(p); print(p, sh.size)
