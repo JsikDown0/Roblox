@@ -61,7 +61,41 @@ def upper_arm(M, var="A"):
     return U
 
 
-def lower_arm(M):
+WRISTS = {
+    "W0": "r2: 짙은 띠 + 양옆 원형 못 + 앞 직사각 블록",
+    "W1": "바이슨식 짧은 띠(아래팔보다 4칸 안쪽 · 가운데 홈 고리)",
+    "W2": "소매: 아래팔 끝이 손목을 통째로 덮음(손이 소매에서 나옴)",
+    "W3": "작은 너클 경첩(어깨 A · 팔꿈치와 같은 문법, 축 하나)",
+    "W4": "양옆 직사각 브래킷 + 바깥 원형 못(축) + 가운데 짙은 심",
+}
+
+
+def wrist_joint(L, G, wrist):
+    X, Y, Z = G; dx = np.abs(X - AX)
+    if wrist == "W0":
+        L.add(cyl(G, "z", (AX, 0), 7, rng=(135, 141)), 3)
+        for sx in (1, -1):
+            L.add(cyl(G, "x", (0, 138), 2.2, rng=sorted((AX + sx * 6, AX + sx * 8))), 4)
+        L.add(cbox(G, (AX - 3, AX + 3), (-9, -6), (135, 141), {"yz": 1}), 3)
+    elif wrist == "W1":
+        L.add(cyl(G, "z", (AX, 0), 6, rng=(135, 141)), 3)
+        L.groove(cyl(G, "z", (AX, 0), 6.5) & ~cyl(G, "z", (AX, 0), 5.0) & (Z == 138), 4)
+    elif wrist == "W2":
+        # 1차: 짧은 소매(z137~142) + 공 → 공은 손등에 가려 안 보이고 소매 턱이 가로줄처럼 읽힘
+        # → 아래팔 끝을 그대로 z133 까지 이어 손목을 통째로 덮음(손이 소매에서 나옴) · 속은 짙은 심
+        cuff = (dx <= 9.5) & (np.abs(Y) <= 8) & (Z >= 133) & (Z <= 142) & (dx + np.abs(Y) <= 14)
+        L.add(cuff & ~((dx <= 7) & (np.abs(Y) <= 6) & (Z <= 139)), 1)
+        L.add(cyl(G, "z", (AX, 0), 5, rng=(134, 141)), 3)
+    elif wrist == "W3":
+        knuckle_hinge(L, G, [(0, 138)], (135, 141), block_y=(-5, 4), links=False)
+    elif wrist == "W4":
+        L.add(cyl(G, "z", (AX, 0), 5, rng=(134, 142)), 3)                                             # 가운데 심
+        for sx in (1, -1):
+            L.add(cbox(G, sorted((AX + sx * 5, AX + sx * 7)), (-5, 5), (133, 143), {"yz": 2}), 2)     # 직사각 브래킷
+            L.add(cyl(G, "x", (0, 138), 2.4, rng=sorted((AX + sx * 7, AX + sx * 8))), 4)             # 원형 못(축 끝)
+
+
+def lower_arm(M, wrist="W0"):
     L = M.part("LowerArmL", (28, -16, 132), (62, 16, 196), pivot=ELB, parent="UpperArmL")
     G = L.g(); X, Y, Z = G; dx = np.abs(X - AX)
     knuckle_hinge(L, G, [(1.5, 188), (-2.5, 182)], (179, 191))
@@ -72,11 +106,7 @@ def lower_arm(M):
     fa &= (dx + np.abs(Y) <= np.maximum(w, d) + np.minimum(w, d) - 4)
     L.add(fa & ~(L.a > 0), 1)
     L.emboss((dx <= 8) & (Z >= 152) & (Z <= 173) & (Y < -10), 1)                                       # 앞 덧판 1칸(세로 판 — 가로줄 없음)
-    # 손목: 짙은 띠(아래팔보다 3칸 안쪽) + 바깥·안쪽 원형 못 + 앞 직사각 블록
-    L.add(cyl(G, "z", (AX, 0), 7, rng=(135, 141)), 3)
-    for sx in (1, -1):
-        L.add(cyl(G, "x", (0, 138), 2.2, rng=sorted((AX + sx * 6, AX + sx * 8))), 4)
-    L.add(cbox(G, (AX - 3, AX + 3), (-9, -6), (135, 141), {"yz": 1}), 3)
+    wrist_joint(L, G, wrist)
     L.trim()
     return L
 
@@ -96,9 +126,9 @@ def hand(M):
     return Hn
 
 
-def build_all(var="A"):
+def build_all(var="A", wrist="W0"):
     M = sh.build_all(final=True)
-    upper_arm(M, var); lower_arm(M); hand(M)
+    upper_arm(M, var); lower_arm(M, wrist); hand(M)
     for n in ("UpperArmL", "LowerArmL", "HandL"):
         M.mirror(n, n[:-1] + "R")
     return M
