@@ -1,9 +1,9 @@
-# ST-10 BISON (양산형, 컨셉 표기 R-03) 모델 파일 (flag_vox/1 JSON)
+# HT-10 BISON (옛 ST-10) (양산형, 컨셉 표기 R-03) 모델 파일 (flag_vox/1 JSON)
 
 | 파일 | 내용 | 삼각형 |
 |---|---|---|
-| `BISON_C_full.json` | **지휘관형 ST-10C(2성)** = 기본형 + 안테나(왼 어깨) · 오른 어깨 판(ShoulderR 거울 + PlateFR · PlateBR) · 양 어깨 보조 무장 통 3개씩(PlateB/BR 에 포함) · 목깃 렌즈 · 흉판 덧장갑 3칸 · 허벅지·무릎 +15% · 30 파트 · 섬 0 (코드 `mass_cmd_r1.py`) | 38,870 |
-| `BISON_E_full.json` | **공병형 ST-10E(1성 옆그레이드)** = 기본형 + Container(부모 Torso, 짙은 올리브 색 9 = (70,74,58), 옆 노즐 2) + Crane(부모 Container, 각진 붐 · 크롬 실린더 · 두 갈래 집게, 오른 어깨 위 앞으로) · 30 파트 · 섬 0 (코드 `mass_eng_r1.py` `build_all('c','N2',big=True)`) | 41,590 |
+| `BISON_C_full.json` | **지휘관형 HT-10C(2성)** = 기본형 + 안테나(왼 어깨) · 오른 어깨 판(ShoulderR 거울 + PlateFR · PlateBR) · 양 어깨 보조 무장 통 3개씩(PlateB/BR 에 포함) · 목깃 렌즈 · 흉판 덧장갑 3칸 · 허벅지·무릎 +15% · 30 파트 · 섬 0 (코드 `mass_cmd_r1.py`) | 38,870 |
+| `BISON_E_full.json` | **공병형 HT-10E(1성 옆그레이드)** = 기본형 + Container(부모 Torso, 짙은 올리브 색 9 = (70,74,58), 옆 노즐 2) + Crane(부모 Container, 각진 붐 · 크롬 실린더 · 두 갈래 집게, 오른 어깨 위 앞으로) · 30 파트 · 섬 0 (코드 `mass_eng_r1.py` `build_all('c','N2',big=True)`) | 41,590 |
 | `BISON_full.json` | 원래 해상도(칸 0.05) · **28 파트(몸 23 + 무장 5)** · 섬 0 · 파트당 1만 미만 · 두께 B(몸통·골반·다리 앞뒤 ×1.15) | 35,838 |
 
 - 만드는 코드: `mech/code/mass/mass_final.py` (→ `mass_hose_r1` B1 → `mass_leg_r4` → `mass_leg_r3` → `mass_leg_r2` → `mass_arm_r2` f → `mass_shoulder_r3` → `mass_chest_r4` a → `mass_head_r5` A …).

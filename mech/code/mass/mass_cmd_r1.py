@@ -122,7 +122,7 @@ def build_all():
         M.parts.pop(n)
     M.mirror("UpperLegL", "UpperLegR", "Pelvis"); M.mirror("LowerLegL", "LowerLegR", "UpperLegR")
     M.parts["FootR"].parent = "LowerLegR"; M.parts["PistonCylR"].parent = "LowerLegR"
-    M.extra.update({"name": "BISON", "designation": "ST-10C", "variant": "commander"})
+    M.extra.update({"name": "BISON", "designation": "HT-10C", "variant": "commander"})
     return M
 
 

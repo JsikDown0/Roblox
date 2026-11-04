@@ -144,7 +144,7 @@ def crane_big(M, body):
 def build_all(col="b", noz="N1", big=False):
     M = MF.build_armed()
     build_container(M, col, noz, big)
-    M.extra.update({"name": "BISON", "designation": "ST-10E", "variant": "engineer"})
+    M.extra.update({"name": "BISON", "designation": "HT-10E", "variant": "engineer"})
     return M
 
 

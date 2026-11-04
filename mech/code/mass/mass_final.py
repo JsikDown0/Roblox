@@ -1,4 +1,4 @@
-"""ST-10 BISON(양산형, 컨셉 표기 R-03) 최종 조립 (2026-11-03) — 이름·형식번호 [결정 11-03 "바이슨 + ST-10 좋아"] — [결정 11-03 "B1 로 가자. 이제 이 기체 디자인은 확정"].
+"""HT-10 BISON(양산형, 옛 ST-10, 컨셉 표기 R-03) 최종 조립 (2026-11-03) — 이름·형식번호 [결정 11-03 "바이슨 + ST-10 좋아"] — [결정 11-03 "B1 로 가자. 이제 이 기체 디자인은 확정"].
 
 확정 구성: 머리 r5 A(3면 45°) · 가슴 r4 a(갈매기 꺾임선) · 어깨 r3(꺾인 판 PlateF/PlateB) · 팔 f(2축 경첩) ·
   하체 r2b A(골반 옆 블록 · 무릎 너클) + 무릎 아래 r3 E → r4(금속 피스톤 PistonCyl/PistonRod 구동 · 호스 띄움 · 발끝 가름) ·
@@ -27,7 +27,7 @@ KEEP_LOCAL = ("PlateF", "PlateB", "PistonCylL", "PistonCylR", "PistonRodL", "Pis
 def build_body():
     """무장 전 확정 몸(11-03 디자인 확정 시점)."""
     M = hs.build_all("B1")
-    M.extra.update({"name": "BISON", "designation": "ST-10", "palette": {str(k): list(v) for k, v in PAL.items()},
+    M.extra.update({"name": "BISON", "designation": "HT-10", "palette": {str(k): list(v) for k, v in PAL.items()},
                     "emissive": sorted(EMISSIVE), "metal": sorted(METAL), "rest_pose": "UpperArmL/R roty ∓9",
                     "keep_local": list(KEEP_LOCAL),
                     "piston": {"T": l4.T_.tolist(), "B": l4.B_.tolist(), "cyl_len": l4.LC, "rod_len": l4.LR}})
@@ -67,7 +67,7 @@ if __name__ == "__main__":
                      light=(-0.75, -0.55, 0.6), metal=METAL) for y, p, _ in views]
     H = max(i.height for i in ims); W = sum(i.width for i in ims) + 16 * 6
     sh = Image.new("RGB", (W, H + 110), (24, 25, 28)); d = ImageDraw.Draw(sh)
-    d.text((16, 14), "ST-10 BISON — 디자인 확정 + 기본형 무장 (11-03)", fill=(235, 235, 235), font=ft)
+    d.text((16, 14), "HT-10 BISON — 디자인 확정 + 기본형 무장 (11-03)", fill=(235, 235, 235), font=ft)
     x = 16
     for im, (_, _, t) in zip(ims, views):
         sh.paste(im, (x, 60)); d.text((x + 6, 60 + H + 10), t, fill=(220, 220, 220), font=f); x += im.width + 16
