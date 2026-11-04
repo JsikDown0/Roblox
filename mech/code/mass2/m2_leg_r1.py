@@ -143,8 +143,11 @@ def foot(M, v):
     F.trim()
 
 
-def build_all(v="a", r2=False):
+def build_all(v="a", r2=False, final=False):
+    """final=True → 전신 확정 [결정 11-04 "좋아. 전신 확정 후 카빈으로"] = 다리 a + r2~r6 수정(고관절 하우징 · 무릎 마디 · 발목 판 · 뒤 스커트)."""
     global R2
+    if final:
+        v, r2 = "a", True
     R2 = r2
     M = wr.build_all(final=True)
     upper_leg(M); lower_leg(M, v); foot(M, v)
