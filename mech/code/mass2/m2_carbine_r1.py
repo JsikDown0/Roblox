@@ -38,6 +38,43 @@ def oct_(a, b, c, a0, a1, bc, h, w, ch):
     return (a >= a0) & (a <= a1) & (db <= h) & (dc <= w) & (db + dc <= h + w - ch)
 
 
+BUTT = None                   # r2 [유저 11-04 "불펍으로 가되 개머리판이 그냥 사각형 처리가 끝"]: 개머리 3안
+BUTTS = {"B1": "B1 쐐기(AUG·타보르식) — 아래가 1:2 로 올라가는 쐐기 · 기운 받침판 · 볼받침 돋움",
+         "B2": "B2 엄지 구멍(QBZ·P90식) — 개머리 아래로 내려온 뒤 손잡이 고리 · 엄지 구멍",
+         "B3": "B3 2단 받침(SA80·FAMAS식) — 몸통보다 좁은 목 + 넓은 받침 덩어리 · 사이 짙은 틈 · 옆 오목 판"}
+
+
+def butt_masks(m, a, b, c, ac, body, kind):
+    """불펍 개머리(a < −18, 탄창 뒤). 몸통 앞부분(a ≥ −18)은 그대로."""
+    front = body & (a >= -18)
+    m[2] |= front
+    m[1] |= (a >= -16) & (a <= 12) & (b >= 7) & (b <= 15) & (ac <= 6) & (ac > 5)                      # 모래 옆판(앞)
+    if kind == "B1":
+        bot = 4 + np.clip(-20 - a, 0, None) / 2.0                                                      # 아래 1:2 로 올라감(a −36 에서 b 12)
+        top = 18 - np.clip(-34 - a, 0, None) * 1.0
+        rear = -36 + np.clip(b - 14, 0, None) / 2.0                                                    # 받침판 1:2 로 기욺(위가 앞)
+        bu = (a < -18) & (a >= rear) & (b >= bot) & (b <= top) & (ac <= 5) & ((np.abs(b - 11) + ac) <= 7 + 5 - 2)
+        m[2] |= bu
+        m[1] |= (a >= -29) & (a < -18) & (b >= 10) & (b <= 15) & (ac <= 6) & (ac > 5)                   # 모래 옆판(뒤) — 1차: 쐐기 따라 자르니 계단 줄 → 사각, 쐐기 끝은 짙은 색만
+        m[3] |= (a >= -31) & (a <= -21) & (b > 18) & (b <= 19) & (ac <= 3.5)                           # 볼받침 돋움
+        m[4] |= (a >= rear - 1) & (a < rear) & (b >= bot + 1) & (b <= top - 1) & (ac <= 4)               # 고무 받침(기운)
+    elif kind == "B2":
+        bu = oct_(a, b, c, -36, -18, 11, 7, 5, 2)
+        grip = (a >= -36) & (a <= -24) & (b >= -8) & (b < 5) & (ac <= 4) & ((np.abs(a + 30) + np.clip(-4 - b, 0, None)) <= 9)
+        hole = (a >= -31) & (a <= -25) & (b >= -4) & (b <= 2)
+        m[2] |= (bu | grip) & ~hole
+        m[3] |= (bu | grip) & ~hole & (ac <= 4) & (b < 4)                                               # 아래 고리(짙은 프레임)
+        m[1] |= (a >= -33) & (a < -18) & (b >= 7) & (b <= 15) & (ac <= 6) & (ac > 5)
+        m[4] |= (a >= -37) & (a < -36) & (b >= -6) & (b <= 17) & (ac <= 4)
+    elif kind == "B3":
+        neck = oct_(a, b, c, -26, -18, 11, 5, 4, 2)                                                    # 좁은 목
+        pad = oct_(a, b, c, -36, -28, 10, 8, 5.5, 3) & (a >= -36 + np.clip(b - 15, 0, None) / 2.0)       # 넓은 받침 덩어리(위 뒤 1:2)
+        m[2] |= neck | pad
+        m[3] |= oct_(a, b, c, -28, -26, 11, 4, 3.5, 1)                                                 # 사이 짙은 틈(심)
+        m[1] |= pad & (ac > 4.5) & (a >= -34) & (a <= -30) & (b >= 6) & (b <= 14)                       # 옆 오목 판 자리 → 모래
+        m[4] |= (a >= -37) & (a < -36 + np.clip(b - 15, 0, None) / 2.0) & (b >= 3) & (b <= 17) & (ac <= 4.5)
+
+
 def carbine_masks(a, b, c, var):
     ac = np.abs(c); m = {k: np.zeros(a.shape, bool) for k in (1, 2, 3, 4, 6, 7)}
     rr = (b - 12) ** 2 + c ** 2
@@ -81,9 +118,12 @@ def carbine_masks(a, b, c, var):
         bore_a = 50
     elif var == "C2":
         body = oct_(a, b, c, -36, 16, 11, 7, 5, 2)                                                     # 긴 몸통(개머리 포함)
-        m[2] |= body
-        m[1] |= (a >= -32) & (a <= 12) & (b >= 7) & (b <= 15) & (ac <= 6) & (ac > 5)                     # 모래 옆판
-        m[4] |= (a >= -37) & (a < -36) & (b >= 5) & (b <= 17) & (ac <= 4)                                 # 고무 받침
+        if BUTT is None:
+            m[2] |= body
+            m[1] |= (a >= -32) & (a <= 12) & (b >= 7) & (b <= 15) & (ac <= 6) & (ac > 5)                 # 모래 옆판
+            m[4] |= (a >= -37) & (a < -36) & (b >= 5) & (b <= 17) & (ac <= 4)                             # 고무 받침
+        else:
+            butt_masks(m, a, b, c, ac, body, BUTT)
         m[3] |= (b < 4) & (b >= -10) & (a >= -18) & (a <= -11) & (ac <= 3.5)                              # 탄창(손잡이 뒤)
         m[3] |= (b < 4) & (b >= 2) & (a >= -11) & (a <= -6) & (ac <= 3)                                   # 방아쇠 울 이음
         # 운반 손잡이(구멍) + 청록 점
@@ -123,13 +163,17 @@ def place(M, var, name="Carbine", parent="HandR", O=GRIP_O, a_=A_, b_=B_):
     return P
 
 
-def build_all(var="C1"):
+def build_all(var="C1", butt=None):
+    global BUTT
+    BUTT = butt
     M = lg.build_all(final=True)
     place(M, var)
     return M
 
 
-def solo(var):
+def solo(var, butt=None):
+    global BUTT
+    BUTT = butt
     """총만(옆에서 보기용): a = +Y? → 수평 · 총구 −Y(앞) 가 아니라 화면 오른쪽(+X)으로."""
     M = fv.Model()
     place(M, var, parent=None, O=(0, 0, 0), a_=(1, 0, 0), b_=(0, 0, 1))
