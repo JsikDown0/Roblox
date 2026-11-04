@@ -30,31 +30,42 @@ def octo(G, hx, hy, z0, z1, c=5, ct=3):
     return m
 
 
-def build_head(M, v="M1", parent=None):
+def build_head(M, v="M1", parent=None, tall=0):
+    """tall > 0 (r2): 머리를 tall 칸 길게(아래로) + 위로 갈수록 좁아짐(1:6) — 정사각 상자 느낌 줄임."""
     p = V[v]
-    H = M.part("Head", (-24, -22, 228), (25, 20, 264), pivot=(0, 0, 236), parent=parent)
+    H = M.part("Head", (-24, -22, 216), (25, 20, 266), pivot=(0, 0, 236), parent=parent)
     G = H.g(); X, Y, Z = G; ax = np.abs(X)
-    H.add(cyl(G, "z", (0, 0), 8, rng=(228, 237)), 3)                                            # 목
-    H.add(octo(G, 14, 15, 236, 259), 1)
-    H.add(cbox(G, (-9, 9), (-9, 9), (259, 261), {"xy": 2}), 1)                                   # 위 덮개 판
-    H.groove((ax <= 9) & (np.abs(Y + 1) <= 9) & (Z == 260) & ((ax == 9) | (np.abs(Y + 1) == 9)), 4)
-    zc = 248.5
+    z0 = 236 - tall
+    H.add(cyl(G, "z", (0, 0), 8, rng=(z0 - 8, z0 + 1)), 3)                                       # 목
+    body = octo(G, 14 if not tall else 12, 15, z0, 259 + (2 if tall else 0))
+    if tall:
+        body &= (ax <= 12 - np.clip(Z - 252, 0, None) / 3.0)                                       # 위쪽 좁아짐
+    H.add(body, 1)
+    tw = 9 if not tall else 7
+    zt = 259 + (2 if tall else 0)
+    H.add(cbox(G, (-tw, tw), (-9, 9), (zt, zt + 2), {"xy": 2}), 1)                                 # 위 덮개 판
+    H.groove((ax <= tw) & (np.abs(Y + 1) <= 9) & (Z == zt + 1) & ((ax == tw) | (np.abs(Y + 1) == 9)), 4)
+    zc = 248.5 - (tall * 0.3 if tall else 0)
     sock = (ax <= p["sw"]) & (np.abs(Z - zc) <= p["sh"]) & (Y <= -10)                            # 정면 사각 홈
     H.cut(sock)
     H.add((ax <= p["sw"]) & (np.abs(Z - zc) <= p["sh"]) & (Y == -9), 4)
     H.add((ax <= p["sw"] + 1) & (np.abs(Z - zc) <= p["sh"] + 1) & ((ax >= p["sw"]) | (np.abs(Z - zc) >= p["sh"])) & (Y >= -16) & (Y <= -14) & (H.a == 0), 2)   # 홈 테(짙은 회색)
-    H.add(cyl(G, "y", (0, zc), p["lr"] + 1.5, rng=(-11, -10)), 2)                               # 렌즈 테
-    H.add(cyl(G, "y", (0, zc), p["lr"], rng=(-12, -11)), 6)                                     # 렌즈(발광)
+    ring = 2.5 if tall else 1.5                                                                   # r2: 어두운 링 두껍게(눈동자처럼)
+    H.add(cyl(G, "y", (0, zc), p["lr"] + ring, rng=(-11, -10)), 3 if tall else 2)               # 렌즈 테
+    H.add(cyl(G, "y", (0, zc), p["lr"] - (0.5 if tall else 0), rng=(-12, -11)), 6)              # 렌즈(발광)
     if p["brow"]:
         H.add((ax <= p["sw"] + 3) & (Z >= zc + p["sh"] + 1) & (Z <= zc + p["sh"] + 2) & (Y >= -18) & (Y <= -14), 1)   # 이마 처마
-    H.add(cbox(G, (-6, 6), (-15, -8), (232, 239), {"xy": 2, "-y-z": 2}), 3)                       # 짙은 턱
+    H.add(cbox(G, (-6, 6), (-15, -8), (z0 - 4, z0 + 3), {"xy": 2, "-y-z": 2}), 3)                 # 짙은 턱
+    if tall:                                                                                       # 홈 테 단차: 홈 둘레 1칸 돋움(짙은 회색) + 볼판 2칸
+        H.emboss((ax <= p["sw"] + 2) & (np.abs(Z - zc) <= p["sh"] + 2) & ((ax > p["sw"]) | (np.abs(Z - zc) > p["sh"])) & (Y < -12), 2)
     for s in (1, -1):                                                                              # 볼판(비스듬)
-        H.emboss((ax >= 10) & (ax <= 13) & (Z >= 237) & (Z <= 247) & (Y <= -6), 1)
-        lo_, hi_ = sorted((s * 14, s * 19))                                                        # 귀(팔각 원통)
+        H.emboss((ax >= 10) & (ax <= 13) & (Z >= z0 + 1) & (Z <= 247) & (Y <= -6), 1, h=2 if tall else 1)
+        e0 = 12 if tall else 14                                                                    # r2: 머리통이 좁아져 귀를 몸에 붙임(섬 방지)
+        lo_, hi_ = sorted((s * e0, s * (e0 + 5)))                                                  # 귀(팔각 원통)
         ear = (np.abs(Y - 1) <= 5) & (np.abs(Z - 247) <= 5) & (np.abs(Y - 1) + np.abs(Z - 247) <= 7) & (X >= lo_) & (X <= hi_)
         H.add(ear, 1)
-        H.add(ear & (ax >= (18 if s else 18)) & (np.abs(Y - 1) + np.abs(Z - 247) <= 3.5), 2)
-        H.add((ax >= 14) & (ax <= 15) & (np.abs(Y - 1) <= 6) & (np.abs(Z - 247) <= 6) & (np.abs(Y - 1) + np.abs(Z - 247) <= 8.5) & (H.a == 0), 2)
+        H.add(ear & (ax >= e0 + 4) & (np.abs(Y - 1) + np.abs(Z - 247) <= 3.5), 2)
+        H.add((ax >= e0) & (ax <= e0 + 1) & (np.abs(Y - 1) <= 6) & (np.abs(Z - 247) <= 6) & (np.abs(Y - 1) + np.abs(Z - 247) <= 8.5) & (H.a == 0), 2)
     H.trim()
     return H
 
@@ -80,9 +91,10 @@ if __name__ == "__main__":
     R = os.path.join(HERE, "..", "..", "docs", "레퍼런스", "양산형2")
     mn = Image.open(os.path.join(R, "concept_v1_메인.png")).convert("RGB")
     con = Image.open(os.path.join(R, "concept_v1_삼면도.png")).convert("RGB")
+    TALL = int(sys.argv[2]) if len(sys.argv) > 2 else 0
     rows = []
     for v in ("M1", "M2", "M3"):
-        M = fv.Model(); collar(M); build_head(M, v)
+        M = fv.Model(); collar(M); build_head(M, v, tall=TALL)
         p = M.parts["Head"]; _, k = ndimage.label(p.a > 0)
         print(v, "Head tris", 2 * greedy_quads(p.a), "섬", k - 1)
         ims = [vp.render(M.blocks(), PAL, EMISSIVE, yaw=y, pitch=pt, ppc=8, ss=2, ao_amt=0.5, bg=(200, 200, 200), light=(-0.75, -0.55, 0.6))
@@ -94,10 +106,10 @@ if __name__ == "__main__":
     W = max(sum(i.width for i in ims) for _, ims in rows) + 16 * 6
     W = max(W, sum(c.width for c, _ in refs) + 16 * 4)
     sh = Image.new("RGB", (W, 60 + 4 * (H + 46)), (24, 25, 28)); d = ImageDraw.Draw(sh)
-    d.text((16, 14), "새 표준 양산기 ST-10 머리 r1 — 팔각 머리통 · 사각 홈 속 둥근 렌즈 · 귀 포드", fill=(235, 235, 235), font=ft)
+    d.text((16, 14), "새 표준 양산기 ST-10 머리 r%s — 팔각 머리통 · 사각 홈 속 둥근 렌즈 · 귀 포드" % ("2 (9칸 길게 · 폭 좁게 · 위로 좁아짐 · 렌즈 링 두껍게 · 홈 테·볼판 단차)" if TALL else "1"), fill=(235, 235, 235), font=ft)
     for r_, (nm, ims) in enumerate([("컨셉", [c for c, _ in refs])] + rows):
         y0 = 60 + r_ * (H + 46); x = 16
         d.text((16, y0 - 2), nm, fill=(255, 190, 90), font=f)
         for im in ims:
             sh.paste(im, (x, y0 + 26)); x += im.width + 16
-    p = os.path.join(out, "시안_머리r1.png"); sh.save(p); print(p, sh.size)
+    p = os.path.join(out, "시안_머리r1.png" if not TALL else "시안_머리r2_길쭉.png"); sh.save(p); print(p, sh.size)
