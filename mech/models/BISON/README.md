@@ -16,3 +16,4 @@
 - 금속 = 7·8 · 발광 = 6.
 - **회전을 메시에 굽지 말 것**(Studio 에서 CFrame 으로 돌림): PlateF · PlateB(데칼 면) · PistonCyl/Rod L/R(매 프레임 구동). 구동 = `mech/studio/mass_piston.lua`.
 - 데칼 자리(평평하게 비워 둠): 왼 어깨 PlateF 바깥("03") · PlateB 바깥(부대 표식, 게임 카메라 쪽) · 허벅지 앞 판(R-03) · 발목 커프 앞 판 · 뒤꿈치 블록 · 흉판(엠블럼) · 경고 줄무늬(복셀엔 없음, 데칼로).
+- 공병형 설치물(코드 `mass_deploy_r1.py`): `BISON_E_Wall.json` 에너지 방벽 틀(기둥 `WallPillar1~4` · 에너지판 자리 `EnergyP1~3` = **Studio 에서 반투명 파트로 교체**, 아군 공격 통과) · `BISON_E_Turret.json` 자동 포탑(`TurretBase` · `TurretLeg1~3` · `TurretHead` T3, 발광 없음 — 켜짐 = Studio 상태등) · `BISON_E_Crates.json` 접힌 운반 상자(`WallCrate` · `TurretCrate`).

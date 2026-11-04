@@ -29,7 +29,7 @@ def pillar(P, x, y):
     G = P.g(); X, Y, Z = G
     P.add(cbox(G, (x - 8, x + 8), (y - 8, y + 8), (6, WALL_H - 6), {"xy": 2}), 3)            # 짙은 기둥
     for z0, z1 in ((0, 40), (WALL_H - 44, WALL_H)):                                           # 위·아래 올리브 장갑 덮개
-        P.add(cbox(G, (x - 11, x + 11), (y - 11, y + 11), (z0, z1), {"xy": 4, "+zx": 3, "-zx": 2}), 9)
+        P.add(cbox(G, (x - 11, x + 11), (y - 11, y + 11), (z0, z1), {"xy": 4, "+zx": 3, "-zx": 2}), 4)   # [결정 11-04] 초록 → 검정(초록이 너무 많음)
     P.add(cbox(G, (x - 14, x + 14), (y - 16, y + 14), (0, 8), {"xy": 4}), 3)                  # 발판
     P.add(cyl(G, "z", (x, y - 9), 4.5, rng=(70, 230)), 2)                                    # 앞 유압 실린더(통)
     P.add(cyl(G, "z", (x, y - 9), 3.0, rng=(230, 252)), 8)                                   # 크롬 로드
@@ -54,7 +54,7 @@ def build_wall():
         G = E.g(); X, Y, Z = G
         ya, yb = PY[a] - 3, PY[b] - 3
         t = (X - a) / (b - a); yc = ya + (yb - ya) * t + 3 * np.sin(np.pi * t)                # 판 가운데가 뒤로(오목)
-        E.add((X >= a + 9) & (X <= b - 9) & (np.abs(Y - yc) <= 0.6) & (Z >= 46) & (Z <= WALL_H - 48), 10)
+        E.add((X >= a + 9) & (X <= b - 9) & (np.abs(Y - yc) <= 1.2) & (Z >= 46) & (Z <= WALL_H - 48), 10)
         E.trim()
     M.extra["studio_only"] = ["EnergyP1", "EnergyP2", "EnergyP3"]
     return M
@@ -88,7 +88,10 @@ def turret_head(M, kind):
         H.add(beam_y(G, 0, 86, -42, -50, 4.4), 3)
     H.add(box(G, x=(-10, 10), y=(-4, 6), z=(Z.max() - 0, Z.max())) & False, 3)
     top = int(np.argwhere(H.a > 0)[:, 2].max() + H.lo[2])
-    H.add(box(G, x=(-10, 10), y=(0, 8), z=(top + 1, top + 3)) & ~box(G, x=(-8, 8), y=(2, 6), z=(top, top + 2)), 3)   # 위 손잡이(크레인)
+    if kind == "T3":                                                                           # 손잡이를 두 포드 위에 걸침(r2 는 포드 사이에 떠 있는 섬)
+        H.add(box(G, x=(-20, 20), y=(0, 8), z=(top + 1, top + 3)) & ~box(G, x=(-9, 9), y=(-1, 9), z=(top + 1, top + 1)), 3)
+    else:
+        H.add(box(G, x=(-10, 10), y=(0, 8), z=(top + 1, top + 3)) & ~box(G, x=(-8, 8), y=(2, 6), z=(top, top + 2)), 3)   # 위 손잡이(크레인)
     bore = (ax <= 1) & (np.abs(Z - (81 if kind == "T1" else 84 if kind == "T2" else 86)) <= 1) & (Y <= Y.min() + 60) & (Y < -40)
     H.cut(bore & (Y <= -46))
     H.trim()
@@ -99,7 +102,7 @@ def beam_y(G, x, z, y0, y1, r):
     return (np.abs(X - x) <= r) & (np.abs(Z - z) <= r) & (Y >= min(y0, y1)) & (Y <= max(y0, y1)) & (np.abs(X - x) + np.abs(Z - z) <= 2 * r - 1)
 
 
-def build_turret(head="T0"):
+def build_turret(head="T3"):                                                                # [결정 11-04] 머리 = T3
     M = fv.Model()
     T = M.part("TurretBase", (-70, -70, 0), (71, 71, 80), pivot=(0, 0, 72))
     G = T.g(); X, Y, Z = G
