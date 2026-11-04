@@ -83,7 +83,7 @@ def pods(M, plate):
     for zc in (248, 240, 232):
         cx_ = XA + 7.5
         P.add(cyl(G, "y", (cx_, zc), 3.6, rng=(YA + 4, YA + 18)), 3)                           # 통
-        P.add(cyl(G, "y", (cx_, zc), 4.0, rng=(YA + 4, YA + 5)), 7)                            # 입구 테(앞 = 로컬 −Y)
+        P.add(cyl(G, "y", (cx_, zc), 4.0, rng=(YA + 4, YA + 5)), 2)                            # 입구 테(앞 = 로컬 −Y) — [결정 11-04] 강철(금속)은 빛 받는 쪽이 하얗게 보여 짙은 쇠로
         P.cut(cyl(G, "y", (cx_, zc), 2.4, rng=(YA + 3, YA + 4)))
         P.add(cyl(G, "y", (cx_, zc), 2.4, rng=(YA + 5, YA + 5)), 5)                            # 노랑 탄두(오목)
         P.add(cyl(G, "y", (cx_, zc), 3.9, rng=(YA + 14, YA + 15)), 5)                          # 뒤 노랑 띠
