@@ -88,7 +88,7 @@ def wrist_joint(L, G, wrist, final=False):
         L.add(cyl(G, "z", (AX, 0), 5, rng=(134, 141)), 3)
         if final:
             # [결정 11-04 "W2 로 가되 손목부에 관절을 표현한 검정 작은 판 하나만 파서 넣어줘"] 소매 앞면에 1칸 파인 검정 판(6×5)
-            plate = (dx <= 3) & (Z >= 135) & (Z <= 139) & (Y <= -7)
+            plate = (dx <= 3) & (Z >= 133) & (Z <= 139) & (Y <= -7)                                   # 2차: 소매 아래 끝(z133)까지 → 손목과 이어져 보이게
             L.cut(plate & (Y == -8)); L.add(plate & (Y == -7), 4)
     elif wrist == "W3":
         knuckle_hinge(L, G, [(0, 138)], (135, 141), block_y=(-5, 4), links=False)
