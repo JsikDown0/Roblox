@@ -200,7 +200,7 @@ def build_clean(M, deep=10, parent=None):
             H.paint(surf & outward & ear & (np.sqrt((Yb - 1) ** 2 + (Zb - 247) ** 2) < 2.8) & (ax >= 15), 3)
         else:
             rr = np.sqrt((Yb - 1) ** 2 + (Zb - 247) ** 2)
-            pe = 18 if R8 else 16
+            pe = 16                                                                                 # [결정 11-04] 귀는 r7 그대로(±16) — r8 의 ±18 은 되돌림
             pod = (ax >= 11) & (ax <= pe) & (rr <= 6.6 - np.clip(ax - (pe - 2), 0, None))           # 원통 + 바깥 모서리 45°(반구보다 계단 적음)
             H.add(pod & ~(H.a > 0), SAND)
             H.add((ax >= 11) & (ax <= 12) & (rr <= 7.8) & (rr >= 5.0), 2)                           # 귀를 감싸는 회색 테(머리 쪽)
@@ -237,6 +237,12 @@ def build_clean(M, deep=10, parent=None):
     H.trim()
     M.extra["head_fit"] = dict(socket_half=sw, socket_z=(s0, s1), lens_z=round(lz, 1), lens_r=round(lr, 2))
     return H
+
+
+def build_final(M, parent=None):
+    """[결정 11-04 "귀는 이전으로 복구하고 머리 디자인 확정"] 머리 확정 = r8(위 덮개 판 없음 · 몸통 ±13 · 앞으로 좁아짐 ±13→±10.6) + r7 귀(±16)."""
+    g = globals(); g["EAR_GEOM"] = False; g["R7"] = True; g["R8"] = True
+    return build_clean(M, deep=10, parent=parent)
 
 
 def ratios_concept():
