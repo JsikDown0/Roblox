@@ -212,3 +212,35 @@ if __name__ == "__main__":
             sh.paste(im, (x, y + (H - im.height) // 2)); x += im.width + 14
         y += H + 8
     p = os.path.join(out, "시안_카빈r1.png"); sh.save(p); print(p, sh.size)
+
+
+# ---- 확정 [결정 11-04 "B3 가자"] = C2 불펍 + B3 2단 받침 · 수납 자리 시안
+FINAL = ("C2", "B3")
+STOWS = {"S1": "S1 등 대각선(총구 오른쪽 아래, 옆판이 뒤로 보임)",
+         "S2": "S2 등 아래 가로(허리 위, 총구 오른쪽)",
+         "S3": "S3 등 오른쪽 세로(총구 아래, 칼처럼 멘 모양)"}
+
+
+def stow(M, kind):
+    v, k = FINAL
+    global BUTT
+    BUTT = k
+    s2 = np.sqrt(0.5)
+    if kind == "S1":
+        a_, b_, ctr = np.array((-s2, 0, -s2)), np.array((-s2, 0, s2)), np.array((0.0, 25.0, 218.0))
+    elif kind == "S2":
+        a_, b_, ctr = np.array((-1.0, 0, 0)), np.array((0, 0, 1.0)), np.array((-12.0, 25.0, 216.0))
+    else:
+        a_, b_, ctr = np.array((0, 0, -1.0)), np.array((-1.0, 0, 0)), np.array((-12.0, 25.0, 214.0))
+    O = ctr - 5 * a_ - 7 * b_                                                                     # 총 가운데(a 5 · b 7)를 ctr 에 · Y 25 = 옆판(c 6)이 등(Y 18~19)에 닿음(1차 26 은 1칸 떠 보임)
+    return place(M, v, name="CarbineStowed", parent="Torso", O=O, a_=a_, b_=b_)
+
+
+def build_final(stow_kind=None):
+    M = lg.build_all(final=True)
+    global BUTT
+    BUTT = FINAL[1]
+    place(M, FINAL[0])
+    if stow_kind:
+        stow(M, stow_kind)
+    return M
