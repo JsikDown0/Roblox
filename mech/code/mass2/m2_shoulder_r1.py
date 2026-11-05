@@ -47,16 +47,9 @@ DIRS_B = DIRS_A + _perm((1, 2, 0)) + _perm((1, 1, 2))
 
 
 def joint(M, s):
-    """짙은 회색 어깨 관절(X 축) — 몸통 옆에서 바깥으로."""
-    nm = "ShoulderJointL" if s > 0 else "ShoulderJointR"
-    J = M.part(nm, (-40, -12, 215), (41, 12, 240), pivot=(s * SJ[0], 0, SJ[2]), parent="Torso")
-    G = J.g(); X, Y, Z = G
-    xr = (26, 36) if s > 0 else (-36, -26)
-    J.add(cyl(G, "x", (0, SJ[2]), 8.5, rng=xr), 2)
-    J.add(cyl(G, "x", (0, SJ[2]), 9.5, rng=(xr[0] + 2, xr[0] + 3) if s > 0 else (xr[1] - 3, xr[1] - 2)), 2)   # 테 1칸
-    J.groove(cyl(G, "x", (0, SJ[2]), 5.5, rng=(-40, 40)) & ~cyl(G, "x", (0, SJ[2]), 4.5, rng=(-40, 40)) & (np.abs(X) >= 34), 3)
-    J.trim()
-    return J
+    """짙은 회색 어깨 관절(X 축) — 골격 표준 m2_frame.shoulder_joint."""
+    import m2_frame as fr
+    return fr.shoulder_joint(M, s, SJ)
 
 
 def surf_hole(P, c, u, r=2.2, depth=2, rim=True):

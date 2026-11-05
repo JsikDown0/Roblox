@@ -13,6 +13,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 sys.path.insert(0, os.path.join(HERE, "..", "flagship_tools"))
 from flag_vox import cyl, cbox  # noqa: E402
+import m2_frame as fr  # noqa: E402
 import m2_carbine_r1 as C  # noqa: E402
 import m2_leg_r1 as lg  # noqa: E402
 
@@ -38,23 +39,24 @@ def nozzle(P, G, x, z, y0, r0, r1, L, glow=None):
 
 
 def booster(M):
-    B = M.part("Booster", (-22, 4, 170), (23, 32, 200), pivot=(0, 0, 160), parent="Pelvis")
+    ox, oy, oz = (int(v) for v in fr.hp("BackLower")[0])                                               # 장착점 BackLower (0, 19, 183)
+    B = M.part("Booster", (ox - 22, oy - 15, oz - 13), (ox + 23, oy + 13, oz + 17), pivot=(0, 0, 160), parent=fr.HARDPOINTS["BackLower"]["parent"])
     G = B.g(); X, Y, Z = G
-    B.add(cbox(G, (-17, 17), (8, 19), (175, 192), {"xy": 3, "+y+z": 3, "+y-z": 3}), 3)                # 부스터 상자(짙은 프레임)
-    B.add(cbox(G, (-15, 15), (8, 17), (192, 194), {"xy": 2, "+yz": 2}), 1)                            # 위 모래 덮개(등 아래 끝 밑)
-    B.emboss((np.abs(X) <= 13) & (Z >= 177) & (Z <= 190) & (Y > 18), 2)                               # 뒤 판(짙은 회색) 1칸
+    B.add(cbox(G, (ox - 17, ox + 17), (oy - 11, oy), (oz - 8, oz + 9), {"xy": 3, "+y+z": 3, "+y-z": 3}), 3)   # 부스터 상자(짙은 프레임)
+    B.add(cbox(G, (ox - 15, ox + 15), (oy - 11, oy - 2), (oz + 9, oz + 11), {"xy": 2, "+yz": 2}), 1)         # 위 모래 덮개(등 아래 끝 밑)
+    B.emboss((np.abs(X - ox) <= 13) & (Z >= oz - 6) & (Z <= oz + 7) & (Y > oy - 1), 2)                       # 뒤 판(짙은 회색) 1칸
     for sx in (1, -1):
-        nozzle(B, G, sx * 8, 183, 19, 4.0, 6.0, 7)                                                     # 1차 입 r5 · 길이 6 → 작아 보여 r6 · 7
+        nozzle(B, G, ox + sx * 8, oz, oy, 4.0, 6.0, 7)                                                 # 1차 입 r5 · 길이 6 → 작아 보여 r6 · 7
     B.trim()
 
 
 def calf(M):
     for s, nm in ((1, "L"), (-1, "R")):
-        x = s * lg.CX
-        P = M.part("CalfBooster" + nm, (x - 8, 8, 64), (x + 9, 26, 96), pivot=lg.KNEE if s > 0 else (-lg.KNEE[0], lg.KNEE[1], lg.KNEE[2]), parent="LowerLeg" + nm)
+        x, oy, oz = (int(v) for v in fr.hp("Calf" + nm)[0])                                            # 장착점 CalfL/R (±23, 16, 79)
+        P = M.part("CalfBooster" + nm, (x - 8, oy - 8, oz - 15), (x + 9, oy + 10, oz + 17), pivot=lg.KNEE if s > 0 else (-lg.KNEE[0], lg.KNEE[1], lg.KNEE[2]), parent=fr.HARDPOINTS["Calf" + nm]["parent"])
         G = P.g(); X, Y, Z = G
-        P.add(cbox(G, (x - 5, x + 5), (10, 16), (72, 87), {"xy": 2, "+yz": 2}), 2)                     # 받침(종아리 뒤)
-        nozzle(P, G, x, 79, 16, 2.5, 3.5, 4)
+        P.add(cbox(G, (x - 5, x + 5), (oy - 6, oy), (oz - 7, oz + 8), {"xy": 2, "+yz": 2}), 2)         # 받침(종아리 뒤)
+        nozzle(P, G, x, oz, oy, 2.5, 3.5, 4)
         P.trim()
 
 

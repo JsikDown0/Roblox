@@ -21,10 +21,11 @@ import flag_vox as fv  # noqa: E402
 from flag_vox import cyl, cbox, poly, roty  # noqa: E402
 import m2_waist_r1 as wr  # noqa: E402
 import m2_shoulder_r1 as sh  # noqa: E402
+import m2_frame as fr  # noqa: E402
 
 PAL, EMISSIVE = wr.PAL, wr.EMISSIVE
-CX = 23
-HIP, KNEE, ANK = (CX, 0, 152), (CX, -1, 108), (CX, 0, 36)
+CX = fr.CX                    # 골격 표준(m2_frame.RIG)
+HIP, KNEE, ANK = fr.HIP, fr.KNEE, fr.ANK
 SPLAY = 3                     # 고관절에서 바깥으로 3°(원본 정면의 벌린 자세), 발은 바닥에 평평하게 되돌림
 ARM_SPLAY = {"UpperArmL": roty(-9), "UpperArmR": roty(9)}
 R2 = False                    # r2 [유저 11-04 표시 4곳]: 고관절 작게 · 무릎판 = 위아래 잇는 부품 · 발목 장갑 작게 + 양옆 모래 사이 · 발 세로 홈 뺌
@@ -36,7 +37,7 @@ def upper_leg(M):
     G = U.g(); X, Y, Z = G; dx = np.abs(X - CX)
     if R2:
         # 파랑 [유저 "골반 관절이 원본은 두껍고 크지 않았어. 살짝 노출돼서 다리와 골반을 잇는 느낌"]: 공 r9 → r6 · 뼈대 ±10 → ±7 · 장갑 위 끝 z147 → 153(치마 밑으로 짙은 관절이 조금만 드러남)
-        U.add(cbox(G, (CX - 7, CX + 7), (-7, 7), (116, 150), {"xy": 2}), 3)
+        fr.hip_frame(U, G, CX)                                                                        # 골격: 허벅지 뼈대
         # 2차 [유저 "고관절은 원본 컨셉 아트를 보고 다시"] [관찰: 원본 정면·메인 확대] 허벅지 장갑 안쪽 위 모서리가 45° 로 크게 잘리고,
         # 그 삼각 틈(샅 블록 바로 옆)으로 짙은 둥근 고관절(가로축 원통 + 동심 고리 + 가운데 허브)이 드러남
         # 4차 [유저 "여전히 빈틈이 마음에 안 들어. 관절 형태를 바꿔서라도 채워줘"]: 공 → 45° 틈을 꽉 채우는 짙은 고관절 하우징
@@ -44,8 +45,7 @@ def upper_leg(M):
         thigh = cbox(G, (CX - 15, CX + 15), (-15, 14), (122, 160), {"xy": 5, "+zx": 2, "+zy": 1, "-zy": 3, "-zx": 2})
         cut = (Z - 136 <= X - (CX - 15))
         U.add(thigh & cut, 1)
-        hous = cbox(G, (CX - 16, CX + 2), (-12, 11), (138, 161), {"xy": 3, "-x-z": 3}) & ~cut & ~(U.a > 0)
-        U.add(hous, 3)
+        fr.hip_housing(U, G, cut, CX)                                                                 # 골격: 고관절 하우징
         # (5차 [유저 "둥근 원판은 없애고"] 앞 원판 뺌)
     else:
         U.add(sh.facet_ellipsoid(G, HIP, (9, 9, 9), sh.DIRS_A), 3)                                   # 고관절 공(장갑 속)
@@ -64,16 +64,7 @@ def lower_leg(M, v):
     G = L.g(); X, Y, Z = G; dx = np.abs(X - CX)
     ky, kz = KNEE[1], KNEE[2]
     # 무릎 관절: 양옆 둥근 너클(정강이 폭보다 2칸 바깥) + 축 + 뒤 홈 드럼
-    for xa, xb in ((CX - 17, CX - 11), (CX + 11, CX + 17)):
-        L.add(cyl(G, "x", (ky, kz), 7.5, rng=(xa, xb)), 3)
-        xe = xa if xa < CX else xb
-        L.groove(cyl(G, "x", (ky, kz), 8) & ~cyl(G, "x", (ky, kz), 5.5) & (X == xe), 4)
-        L.paint(cyl(G, "x", (ky, kz), 2.5) & (X == xe), 2)
-    L.add(cyl(G, "x", (ky, kz), 4, rng=(CX - 11, CX + 11)), 4)
-    drum = cyl(G, "x", (ky + 3, kz - 1), 8, rng=(CX - 9, CX + 9))                                      # 뒤 드럼(그림 뒤 무릎)
-    L.add(drum, 3)
-    ang = np.arctan2(np.broadcast_to(Z - (kz - 1), L.a.shape), np.broadcast_to(Y - (ky + 3), L.a.shape))
-    L.groove(drum & (np.abs(((ang / (np.pi / 6)) % 1.0) - 0.5) < 0.18) & np.broadcast_to(dx <= 8, L.a.shape), 4)
+    fr.knee_joint(L, G, CX, KNEE)                                                                     # 골격: 무릎 너클 + 축 + 뒤 드럼
     # 정강이: 곧은 축 · 무릎 밑에서 불룩(옆 1:2) · 종아리 뒤로 45° · 아래 1:2 로 발목 쪽 좁아짐
     b = sp["bulge"]; bk = sp["back"]
     w = 12 + np.minimum(np.clip(98 - Z, 0, None) / 2.0, b) - np.clip(64 - Z, 0, None) / 2.0
@@ -127,11 +118,7 @@ def foot(M, v):
     F = M.part("FootL", (-6, -46, 0), (52, 36, 44), pivot=ANK, parent="LowerLegL")
     G = F.g(); X, Y, Z = G; dx = np.abs(X - CX)
     fw = round(15 * s); yt = round(-34 * s); yh = round(24 * s)
-    for sx in (1, -1):                                                                                # 발목 원판(둥근, 양옆)
-        F.add(cyl(G, "x", (0, ANK[2]), 6, rng=sorted((CX + sx * 11, CX + sx * 14))), 3)
-        F.groove(cyl(G, "x", (0, ANK[2]), 6.4) & ~cyl(G, "x", (0, ANK[2]), 4) & (X == CX + sx * 14), 4)
-    F.add(cyl(G, "x", (0, ANK[2]), 4, rng=(CX - 11, CX + 11)), 4)
-    F.add(cbox(G, (CX - 8, CX + 8), (-7, 9), (16, ANK[2] + 2), {"xy": 3}), 3)                         # 발목 속 짙은 기둥(원판 ↔ 발)
+    fr.ankle_joint(F, G, CX, ANK)                                                                     # 골격: 발목 원판 + 축 + 기둥
     base = cbox(G, (CX - fw, CX + fw), (yt, yh), (0, 20), {"xy": 5, "+zx": 3, "-y+z": 6, "+y+z": 4})
     F.add(base, 2)
     F.add(cbox(G, (CX - fw + 3, CX + fw - 3), (yt - 3, yt + 8), (0, 11), {"x-y": 3, "-y+z": 4}) & ~(F.a > 0), 2)   # 발끝 앞 단

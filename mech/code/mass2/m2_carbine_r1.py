@@ -142,8 +142,8 @@ def carbine_masks(a, b, c, var):
     return m, bore
 
 
-GRIP_O = np.array((-43.0, 1.0, 124.0))                                                                 # 오른 주먹 속(쥔 점)
-A_ = np.array((0, -0.5, -0.866)); B_ = np.array((0, -0.866, 0.5))                                     # 총구 아래·앞 60°
+import m2_frame as fr  # noqa: E402
+GRIP_O, A_, B_ = fr.hp("HandR")                                                                        # 장착점 HandR: 오른 주먹 속 · 총구 아래·앞 60°
 
 
 def place(M, var, name="Carbine", parent="HandR", O=GRIP_O, a_=A_, b_=B_):
@@ -227,11 +227,11 @@ def stow(M, kind):
     BUTT = k
     s2 = np.sqrt(0.5)
     if kind == "S1":
-        a_, b_, ctr = np.array((-s2, 0, -s2)), np.array((-s2, 0, s2)), np.array((0.0, 25.0, 218.0))
+        a_, b_, ctr = np.array((-s2, 0, -s2)), np.array((-s2, 0, s2)), fr.hp("BackUpper")[0] + (0, 6, -2)     # 장착점 BackUpper 에서
     elif kind == "S2":
-        a_, b_, ctr = np.array((-1.0, 0, 0)), np.array((0, 0, 1.0)), np.array((-12.0, 25.0, 216.0))
+        a_, b_, ctr = np.array((-1.0, 0, 0)), np.array((0, 0, 1.0)), fr.hp("BackUpper")[0] + (-12, 6, -4)
     else:
-        a_, b_, ctr = np.array((0, 0, -1.0)), np.array((-1.0, 0, 0)), np.array((-12.0, 25.0, 214.0))
+        a_, b_, ctr = np.array((0, 0, -1.0)), np.array((-1.0, 0, 0)), fr.hp("BackUpper")[0] + (-12, 6, -6)
     O = ctr - 5 * a_ - 7 * b_                                                                     # 총 가운데(a 5 · b 7)를 ctr 에 · Y 25 = 옆판(c 6)이 등(Y 18~19)에 닿음(1차 26 은 1칸 떠 보임)
     return place(M, v, name="CarbineStowed", parent="Torso", O=O, a_=a_, b_=b_)
 

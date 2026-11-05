@@ -58,8 +58,8 @@ def knife_masks(a, b, c, kind):
     return m
 
 
-GRIP = np.array((42.0, 0.0, 122.0))                                                                     # 왼 주먹 속
-A_ = np.array((0, -0.866, -0.5)); B_ = np.array((0, -0.5, 0.866))
+import m2_frame as fr  # noqa: E402
+GRIP, A_, B_ = fr.hp("HandL")                                                                           # 장착점 HandL: 왼 주먹 속 · 칼끝 앞·아래 30°
 
 
 def place(M, kind, name="Knife", parent="HandL", O=None, a_=A_, b_=B_):

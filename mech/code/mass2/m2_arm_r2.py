@@ -20,36 +20,24 @@ import flag_vox as fv  # noqa: E402
 from flag_vox import cyl, cbox  # noqa: E402
 import m2_shoulder_r1 as sh  # noqa: E402
 from mass_r1 import seg  # noqa: E402
+import m2_frame as fr  # noqa: E402
 
 PAL, EMISSIVE = sh.PAL, sh.EMISSIVE
-AX = 44
-SHO = (AX, 0, 227)
-ELB = (AX, -0.5, 185)
-WRI = (AX, 0, 138)
+AX = fr.AX                    # 골격 표준(m2_frame.RIG)
+SHO, ELB, WRI = fr.SHO, fr.ELB, fr.WRI
 
 
 def knuckle_hinge(P, G, axes, zr, block_y=(-6, 4), links=True):
-    """바이슨 f 경첩: axes = [(Y, Z), ...] X 축 · 양옆 너클(AX±4~7) · 가운데 직사각 블록(AX±3) · 강철 링크판."""
-    X, Y, Z = G
-    for (yc, zc) in axes:
-        P.add(cyl(G, "x", (yc, zc), 2.5, rng=(AX - 8, AX + 8)), 4)                                    # 축
-        for xa, xb in ((AX - 7, AX - 4), (AX + 4, AX + 7)):
-            P.add(cyl(G, "x", (yc, zc), 4.2, rng=(xa, xb)), 3)                                      # 둥근 너클
-            P.groove(cyl(G, "x", (yc, zc), 4.6) & ~cyl(G, "x", (yc, zc), 2.8) & (X == (xa if xa < AX else xb)), 4)
-    P.add(cbox(G, (AX - 3, AX + 3), block_y, zr, {"yz": 2}), 3)                                    # 가운데 직사각 블록
-    if links and len(axes) == 2:
-        (y0, z0), (y1, z1) = axes
-        for x0 in (AX - 4, AX + 4):
-            P.add(seg(G, (x0, y0, z0), (x0, y1, z1), 2.6) & (X == x0), 7)                           # 강철 링크판
+    """BISON f 경첩 — 골격 표준 m2_frame.knuckle_hinge(x0 = AX)."""
+    fr.knuckle_hinge(P, G, axes, zr, block_y, links, x0=AX)
 
 
 def upper_arm(M, var="A"):
     U = M.part("UpperArmL", (30, -14, 186), (62, 14, 234), pivot=SHO, parent="Torso")
     G = U.g(); X, Y, Z = G
-    U.add(cyl(G, "x", (0, 227), 6.5, rng=(34, 52)), 2)                                                # 어깨 축(장갑 속)
-    U.add(cbox(G, (AX - 5, AX + 5), (-6, 6), (213, 226), {"xy": 2}), 3)                               # 위 목(장갑 속)
+    fr.upper_arm_root(U, G, AX)                                                                       # 골격: 어깨 축 + 위 목
     if var == "A":
-        knuckle_hinge(U, G, [(0, 209)], (204, 213), block_y=(-5, 4), links=False)
+        fr.shoulder_hinge(U, G, AX)                                                                   # 골격: 어깨 밑 너클 경첩
     else:
         U.add(cyl(G, "z", (AX, 0), 7, rng=(205, 213)), 3)                                             # 돌림 고리
         U.add(cyl(G, "z", (AX, 0), 7.6, rng=(208, 209)) & ~cyl(G, "z", (AX, 0), 6.6, rng=(208, 209)), 3)
@@ -85,7 +73,7 @@ def wrist_joint(L, G, wrist, final=False):
         # → 아래팔 끝을 그대로 z133 까지 이어 손목을 통째로 덮음(손이 소매에서 나옴) · 속은 짙은 심
         cuff = (dx <= 9.5) & (np.abs(Y) <= 8) & (Z >= 133) & (Z <= 142) & (dx + np.abs(Y) <= 14)
         L.add(cuff & ~((dx <= 7) & (np.abs(Y) <= 6) & (Z <= 139)), 1)
-        L.add(cyl(G, "z", (AX, 0), 5, rng=(134, 141)), 3)
+        fr.wrist_core(L, G, AX)                                                                       # 골격: 손목 심
         if final:
             # [결정 11-04 "W2 로 가되 손목부에 관절을 표현한 검정 작은 판 하나만 파서 넣어줘"] 소매 앞면에 1칸 파인 검정 판(6×5)
             plate = (dx <= 3) & (Z >= 133) & (Z <= 139) & (Y <= -7)                                   # 2차: 소매 아래 끝(z133)까지 → 손목과 이어져 보이게
@@ -102,8 +90,7 @@ def wrist_joint(L, G, wrist, final=False):
 def lower_arm(M, wrist="W0", final=False):
     L = M.part("LowerArmL", (28, -16, 132), (62, 16, 196), pivot=ELB, parent="UpperArmL")
     G = L.g(); X, Y, Z = G; dx = np.abs(X - AX)
-    knuckle_hinge(L, G, [(1.5, 188), (-2.5, 182)], (179, 191))
-    L.add(seg(G, (AX, 4, 191), (AX, 4, 179), 1.6), 7)                                                 # 뒤 피스톤 막대
+    fr.elbow_joint(L, G, AX)                                                                          # 골격: 팔꿈치 2축 경첩 + 뒤 피스톤
     w = 13.0 - np.clip(Z - 176, 0, None) * 1.0 - np.clip(149 - Z, 0, None) / 2.0                     # 1차: 위 45° 5칸 → 항아리 → 2칸
     d = 11.0 - np.clip(Z - 176, 0, None) * 1.0 - np.clip(149 - Z, 0, None) / 2.0
     fa = (dx <= w) & (np.abs(Y) <= d) & (Z >= 142) & (Z <= 178)
