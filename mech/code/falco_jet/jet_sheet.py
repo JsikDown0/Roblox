@@ -2,7 +2,8 @@
 import sys, os, time
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
-import jet_r1 as J
+import importlib
+J = importlib.import_module(sys.argv[3] if len(sys.argv) > 3 else "jet_r1")
 import vox_preview as vp
 import aero_colors as Cc, aero_export as E, aero_wing_v as WV, aero_r1 as A
 

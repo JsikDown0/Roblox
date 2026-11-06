@@ -1,5 +1,5 @@
 -- FalcoJet(FALCO 비행 형태) 조립 — Studio 명령 바에서 한 번 실행 (2026-11-06, jet_export.py 가 위 D 표를 붙여 만듦)
--- 준비: FalcoJet_r1_20261106.glb 를 3D 가져오기로 workspace 에 넣는다(크기·위치 그대로, 메시 이름 X_JetBody ...).
+-- 준비: D.source 의 glb 를 3D 가져오기로 workspace 에 넣는다(크기·위치 그대로, 메시 이름 X_JetBody ...).
 -- 하는 일: ReplicatedStorage.MechProto.FalcoJet 를 새로 만든다. AeroTemplate · 스크립트 · ServerStorage._Archive* 는 읽기만 하고 건드리지 않는다.
 --   이미 FalcoJet 가 있으면 지우지 않고 ServerStorage._FalcoJet_before_<시각> 으로 옮긴다. 가져온 원본은 ServerStorage._Import_<원본 이름> 으로 옮긴다.
 local Proto = game.ReplicatedStorage.MechProto
@@ -106,7 +106,7 @@ end
 m.PrimaryPart = body
 m:SetAttribute("JetForm", true)
 m:SetAttribute("FlightOf", "Aero")
-m:SetAttribute("Source", D.source .. " ×2 (2026-11-06 jet_r1.py r1 · 레포 mech/models/FALCO/). 원점 = HumanoidRootPart 중심 자리, 앞 −Z")
+m:SetAttribute("Source", D.source .. " ×2 (2026-11-06 mech/code/falco_jet · 레포 mech/models/FALCO/). 원점 = HumanoidRootPart 중심 자리, 앞 −Z")
 m.ModelStreamingMode = Enum.ModelStreamingMode.Atomic
 m.Parent = Proto
 imp.Name = "_Import_" .. SRC; imp.Parent = game.ServerStorage

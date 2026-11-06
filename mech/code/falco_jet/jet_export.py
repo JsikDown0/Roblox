@@ -1,7 +1,7 @@
 """
 jet_export.py — FalcoJet r1 → GLB + parts.json + Studio 조립 Lua (2026-11-06)
 
-  python3 jet_export.py OUTDIR
+  python3 jet_export.py OUTDIR [jet_r1|jet_r2]
   → OUTDIR/FalcoJet_r1_20261106.glb          노드 = 파트 8개, 메시 = X_<파트>, 정점 = 월드(Blender, 칸 0.05) → glTF (x, z, −y), 팔레트 UV(인간형과 같은 배치)
     OUTDIR/FalcoJet_r1_20261106_parts.json   파트 · 부착점 · 크기 · 무게 중심(템플릿 좌표)
     OUTDIR/falco_jet_build.lua               Studio 명령 바 조립 스크립트(데이터 표 포함)
@@ -15,7 +15,8 @@ import sys
 
 import numpy as np
 
-import jet_r1 as J
+import importlib
+J = importlib.import_module(sys.argv[2] if len(sys.argv) > 2 else "jet_r1")
 import aero_export as E                     # greedy_mesh · palette_png · write_glb · palette_uv
 import aero_colors as Cc
 
