@@ -21,6 +21,7 @@ TAG = "FalcoJet_r3_20261106"
 HERE, Mm, T, STUD, HRP = R1.HERE, R1.Mm, R1.T, R1.STUD, R1.HRP
 groove_glow = R2.groove_glow
 LEAD, TRAIL, OUT_POD = R2.LEAD, R2.TRAIL, R2.OUT_POD
+TOP_PLATES = True     # r3 윗면 흰 판·주황 조각. r4 = False(유저 "지저분해 보여 → 이전으로")
 
 
 def mx(sx, a, b):
@@ -83,8 +84,9 @@ def build_body(M):
         p.add(rc, WHITE)
         p.paint(rc & (Z <= -10), GREY)
         p.paint(fc & (AX <= 17) & (Z >= 9), ORANGE)                    # 안쪽 위 주황 줄(앞 덮개)
-        plate(p, G, sx, (30, 35), (14, 24), (11, 12), ORANGE)          # 뒤 덮개 위 주황 덩어리(흰 판 옆)
-        plate(p, G, sx, (17, 28), (8, 20), (11, 12))                   # 뒤 덮개 위 흰 돋을 판
+        if TOP_PLATES:
+            plate(p, G, sx, (30, 35), (14, 24), (11, 12), ORANGE)      # 뒤 덮개 위 주황 덩어리(흰 판 옆)
+            plate(p, G, sx, (17, 28), (8, 20), (11, 12))               # 뒤 덮개 위 흰 돋을 판
         # I-c 날개 뿌리 짙은 ㄷ자 틀(앞으로 열림) + 안 검정
         fr = cbox(G, mx(sx, 35, 45), (2, 16), (-12, 4), {"xz": 2})
         p.add(fr, FRAME)
@@ -106,13 +108,14 @@ def build_body(M):
     groove_glow(p, v)
     p.add(box(G, (-3, 3), (-37, -30), (14, 16)), ORANGE)               # V1
     p.add(box(G, (-5, 5), (15, 27), (14, 15)), ORANGE)                 # V2
-    for sx in (1, -1):
+    for sx in (1, -1) if TOP_PLATES else ():
         p.add(cbox(G, mx(sx, 12, 17), (-6, 2), (13, 16), {"xz": 1, "-yz": 1}), ORANGE)   # V 팔 끝 주황 마개
     # 윗면 흰 판(띄엄띄엄 — 컨셉 큰 그림): 가운데 척추 2 · 엔진 사이 2쌍 · 엔진 위 2쌍
     p.add(cbox(G, (-9, 9), (28, 46), (14, 16), {"xz": 1}), WHITE)      # S
-    p.add(cbox(G, (-7, 7), (50, 60), (15, 16), {"xy": 1}), WHITE)
+    if TOP_PLATES:
+        p.add(cbox(G, (-7, 7), (50, 60), (15, 16), {"xy": 1}), WHITE)
     p.add(cbox(G, (-30, 30), (28, 72), (-8, 8), {"xz": 3}), FRAME)    # 엔진 사이 짙은 몸
-    for sx in (1, -1):
+    for sx in (1, -1) if TOP_PLATES else ():
         plate(p, G, sx, (16, 27), (34, 44), (9, 10))
         plate(p, G, sx, (18, 26), (50, 58), (9, 10))
         plate(p, G, sx, (22, 28), (60, 68), (9, 10), ORANGE)          # 꼬리 뿌리 앞 주황 조각
@@ -122,8 +125,11 @@ def build_body(M):
         x0, x1 = mx(sx, 30, 48)
         nac = cbox(G, (x0, x1), (22, 76), (-12, 10), {"xz": 4, "-yz": 6})
         p.add(nac, FRAME)
-        plate(p, G, sx, (32, 46), (28, 38), (11, 12))
-        plate(p, G, sx, (34, 44), (42, 52), (11, 12))
+        if TOP_PLATES:
+            plate(p, G, sx, (32, 46), (28, 38), (11, 12))
+            plate(p, G, sx, (34, 44), (42, 52), (11, 12))
+        else:                                                          # r2 그대로: 엔진 위 흰 판 1장
+            p.add(cbox(G, (x0 + 2, x1 - 2), (30, 44), (11, 12), {"xy": 1}), WHITE)
         cx = (x0 + x1) / 2
         p.cut(box(G, (cx - 5, cx + 5), (72, 76), (-8, 6)))
         p.add(box(G, (cx - 5, cx + 5), (71, 71), (-8, 6)), BLACK)
@@ -166,9 +172,10 @@ def build_wing(M):
     claw(p, G, 1, OUT_POD, -6, -24, -6, -12, hw0=4)
     p.paint(box(G, (OUT_POD + 3, OUT_POD + 3), (-4, 20), (-9, -8)), GREY)   # 포드 바깥 회색 줄
     # 뿌리 위 흰 돋을 판 2(흰 띠 위, 앞전과 나란히 계단)
-    for x0, x1, y0, y1 in ((34, 44, LEAD(44) + 4, LEAD(44) + 16), (46, 56, LEAD(56) + 4, LEAD(56) + 14)):
-        p.add(cbox(G, (x0, x1), (round(y0), round(y1)), (-1, 0), {"xy": 1}), WHITE)
-    p.add(cbox(G, (36, 46), (round(LEAD(46)) + 18, round(LEAD(46)) + 26), (-1, 0), {"xy": 1}), ORANGE)  # 흰 판 뒤 주황 덩어리
+    if TOP_PLATES:
+        for x0, x1, y0, y1 in ((34, 44, LEAD(44) + 4, LEAD(44) + 16), (46, 56, LEAD(56) + 4, LEAD(56) + 14)):
+            p.add(cbox(G, (x0, x1), (round(y0), round(y1)), (-1, 0), {"xy": 1}), WHITE)
+        p.add(cbox(G, (36, 46), (round(LEAD(46)) + 18, round(LEAD(46)) + 26), (-1, 0), {"xy": 1}), ORANGE)  # 흰 판 뒤 주황 덩어리
     p.trim()
     M.mirror("JetWingL", "JetWingR", "JetBody")
     return p

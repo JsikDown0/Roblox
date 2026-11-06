@@ -4,14 +4,15 @@
 
 | 파일 | 내용 |
 |---|---|
-| **`FalcoJet_r3_20261106.glb`** (현재) | r2 + 유저 평 "흡기구가 각진 상자 · 윗면 흰 판 부족 · 흡기구와 주황 발톱 더 디테일하게" 반영: 흡기구 = 앞 덮개(45° 숙임 · 바깥 짙은 판) + 낮은 뒤 덮개 + 날개 뿌리 짙은 ㄷ자 틀 · 주황 발톱 2쌍(계단식, 날개 앞전보다 앞으로) · 안쪽 포드 앞 계단식 · 윗면 흰 판·주황 조각. 메시 6개, 삼각형 7,142 |
+| **`FalcoJet_r4_20261106.glb`** (현재) | r3 에서 윗면 흰 판·주황 조각만 r2 로 되돌림(유저 "지저분해 보여"). 흡기구 겹 · 주황 발톱 · 안쪽 포드 = r3. 메시 6개, 삼각형 약 6.3천 |
+| `FalcoJet_r3_20261106.glb` (버린 안) | r2 + 유저 평 "흡기구가 각진 상자 · 윗면 흰 판 부족 · 흡기구와 주황 발톱 더 디테일하게" 반영: 흡기구 = 앞 덮개(45° 숙임 · 바깥 짙은 판) + 낮은 뒤 덮개 + 날개 뿌리 짙은 ㄷ자 틀 · 주황 발톱 2쌍(계단식, 날개 앞전보다 앞으로) · 안쪽 포드 앞 계단식 · 윗면 흰 판·주황 조각. 메시 6개, 삼각형 7,142 |
 | `FalcoJet_r2_20261106.glb` (지난 판) | 유저 컨셉 c1 기준(`docs/레퍼런스/FALCO/concept_jet_c1.png` · `윤곽읽기_jet_r1.png`, `[결정 11-06 "이대로 · 제안값"]`). 메시 6개(X_JetBody · X_JetCockpit · X_JetWingL/R · X_JetTailL/R), 삼각형 5,200. 카나드 없음 |
 | `FalcoJet_r1_20261106.glb` (버린 안) | 첫 시안 — 유저 "너무 육중 · 우주왕복선 같음". 메시 8개, 삼각형 8,998 |
 | `FalcoJet_r2_20261106_parts.json` (r1 도 같은 형식) | 파트 크기·가운데·피벗 · 부착점 · 판정 상자 · 무게 중심 (템플릿 스터드, 원점 = HRP 중심) |
-| `falco_jet_build.lua` | Studio 명령 바 조립 → `ReplicatedStorage.MechProto.FalcoJet` (지금 = r3 데이터) |
+| `falco_jet_build.lua` | Studio 명령 바 조립 → `ReplicatedStorage.MechProto.FalcoJet` (지금 = r4 데이터) |
 
 ## Studio 순서
-1. r3 glb 를 3D 가져오기로 workspace 에 넣는다(이름 `FalcoJet_r3_20261106` 그대로).
+1. r4 glb 를 3D 가져오기로 workspace 에 넣는다(이름 `FalcoJet_r4_20261106` 그대로).
 2. `falco_jet_build.lua` 전체를 명령 바에 붙여 실행 → 보고 문자열(크기·부착점 월드 위치)이 출력창에 나온다.
    - AeroTemplate 은 읽기만(Torso 의 SurfaceAppearance · 재질, Flame, GlowLight 복제). 이전 FalcoJet 은 `ServerStorage._FalcoJet_before_<시각>` 으로 옮김(지우지 않음). 가져온 원본은 `ServerStorage._Import_FalcoJet_r1_20261106`.
    - 가져오기 축이 예전(10-26 AELLO)과 다르면 assert 로 멈춤 → 메시지를 그대로 전달.
@@ -20,5 +21,5 @@
 - 축: 앞 −Z · 위 +Y · +X = 기체 오른쪽(인간형 템플릿과 같음). 모든 MeshPart 회전 0(꼬리 기울기는 메시에 구움).
 - 부착점 축 = 모델 축 → 총구·미사일은 −Z, 노즐 분사는 +Z(Flame.EmissionDirection = Back, Enabled = false 로 넣음). 속성 `FireDir` 에 방향 표기.
 - 날개·꼬리·카나드·조종석 `PivotOffset` = 뿌리(나중에 Motor6D 로 바꿀 때 축 자리). 동체 PivotOffset = 원점 → `FalcoJet:GetPivot()` = HRP 자리.
-- 원본 코드: `mech/code/falco_jet/jet_r3.py`(복셀, r2 위에 덧댐 · r1 = `jet_r1.py`) · `jet_export.py OUT jet_r3`(glb·json·lua) · `jet_sheet_r3.py`(시트 `docs/레퍼런스/FALCO/시안_FalcoJet_r3.png` · 근접 `시안_FalcoJet_r3_근접.png`) · 윤곽 읽기 `jet_read_r1.py`.
+- 원본 코드: `mech/code/falco_jet/jet_r4.py`(= r3 + `TOP_PLATES = False`) · `jet_r3.py`(복셀, r2 위에 덧댐 · r1 = `jet_r1.py`) · `jet_export.py OUT jet_r3`(glb·json·lua) · `jet_sheet_r3.py`(시트 `docs/레퍼런스/FALCO/시안_FalcoJet_r3.png` · 근접 `시안_FalcoJet_r3_근접.png`) · 윤곽 읽기 `jet_read_r1.py`.
 - r2 답: 뒷전 곧게 · P = 미사일 포드(1·3 = 흡기구 밑 JetBody, 2·4 = 날개 밑) · K = 기관포 · 날씬한 몸(HRP 는 위아래로 튀어나옴 → 판정은 JetHitBox) · 가운데 엔진 = 발광만 · 발광은 홈 속 · 상반각 0(`jet_r2.DIHEDRAL`).

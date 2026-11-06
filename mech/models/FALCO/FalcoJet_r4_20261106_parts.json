@@ -1,0 +1,416 @@
+{
+ "_units": "템플릿(로블록스) 스터드. 원점 = HumanoidRootPart 중심 자리. 앞 = −Z · 위 = +Y · +X = 기체 오른쪽(인간형 AELLO 템플릿과 같은 축).",
+ "_import": "GLB = Blender 단위(칸 0.05). 로블록스 가져오기 뒤 (x, y, z) → (−x, z, y), 회전 없음 → 템플릿 = (가져온 위치 − O) × 2.",
+ "_palette": "인간형과 같은 팔레트 배치(색 n = 8x8 칸 (n%8, 7−n//8)) → SurfaceAppearance 102711399981461 + 발광 마스크 125885624850733 그대로.",
+ "tris": {
+  "JetBody": 3396,
+  "JetCockpit": 318,
+  "JetWingL": 866,
+  "JetWingR": 878,
+  "JetTailL": 426,
+  "JetTailR": 426
+ },
+ "center_imp": {
+  "JetBody": [
+   -0.0,
+   -0.2,
+   -1.775
+  ],
+  "JetCockpit": [
+   -0.0,
+   0.075,
+   -3.6
+  ],
+  "JetWingL": [
+   -3.525,
+   -0.25,
+   0.05
+  ],
+  "JetWingR": [
+   3.525,
+   -0.25,
+   0.05
+  ],
+  "JetTailL": [
+   -1.4793,
+   1.201,
+   3.45
+  ],
+  "JetTailR": [
+   1.4793,
+   1.201,
+   3.45
+  ]
+ },
+ "center": {
+  "JetBody": [
+   0.0,
+   -0.4,
+   -3.55
+  ],
+  "JetCockpit": [
+   0.0,
+   0.15,
+   -7.2
+  ],
+  "JetWingL": [
+   -7.05,
+   -0.5,
+   0.1
+  ],
+  "JetWingR": [
+   7.05,
+   -0.5,
+   0.1
+  ],
+  "JetTailL": [
+   -2.9585,
+   2.4021,
+   6.9
+  ],
+  "JetTailR": [
+   2.9585,
+   2.4021,
+   6.9
+  ]
+ },
+ "size": {
+  "JetBody": [
+   9.7,
+   4.1,
+   22.0
+  ],
+  "JetCockpit": [
+   2.5,
+   3.0,
+   5.1
+  ],
+  "JetWingL": [
+   8.2,
+   1.5,
+   6.9
+  ],
+  "JetWingR": [
+   8.2,
+   1.5,
+   6.9
+  ],
+  "JetTailL": [
+   1.676,
+   3.5101,
+   7.5
+  ],
+  "JetTailR": [
+   1.676,
+   3.5101,
+   7.5
+  ]
+ },
+ "pivot": {
+  "JetBody": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "JetCockpit": [
+   0.0,
+   0.0,
+   -7.2
+  ],
+  "JetWingL": [
+   -3.0,
+   -0.4,
+   0.4
+  ],
+  "JetWingR": [
+   3.0,
+   -0.4,
+   0.4
+  ],
+  "JetTailL": [
+   -2.5,
+   0.9,
+   5.2
+  ],
+  "JetTailR": [
+   2.5,
+   0.9,
+   5.2
+  ]
+ },
+ "att": {
+  "JetNozzleL": {
+   "part": "JetBody",
+   "pos": [
+    -3.9,
+    -0.1,
+    6.7
+   ],
+   "dir": "+Z"
+  },
+  "JetWingNozzleL": {
+   "part": "JetWingL",
+   "pos": [
+    -10.6,
+    -0.25,
+    2.2
+   ],
+   "dir": "+Z"
+  },
+  "JetMuzzleL": {
+   "part": "JetBody",
+   "pos": [
+    -1.4,
+    -0.6,
+    -6.4
+   ],
+   "dir": "-Z"
+  },
+  "JetNozzleR": {
+   "part": "JetBody",
+   "pos": [
+    3.9,
+    -0.1,
+    6.7
+   ],
+   "dir": "+Z"
+  },
+  "JetWingNozzleR": {
+   "part": "JetWingR",
+   "pos": [
+    10.6,
+    -0.25,
+    2.2
+   ],
+   "dir": "+Z"
+  },
+  "JetMuzzleR": {
+   "part": "JetBody",
+   "pos": [
+    1.4,
+    -0.6,
+    -6.4
+   ],
+   "dir": "-Z"
+  },
+  "JetMissile1": {
+   "part": "JetBody",
+   "pos": [
+    -3.1,
+    -2.05,
+    -3.3
+   ],
+   "dir": "-Z"
+  },
+  "JetMissile2": {
+   "part": "JetWingL",
+   "pos": [
+    -5.4,
+    -0.9,
+    -3.5
+   ],
+   "dir": "-Z"
+  },
+  "JetMissile3": {
+   "part": "JetBody",
+   "pos": [
+    3.1,
+    -2.05,
+    -3.3
+   ],
+   "dir": "-Z"
+  },
+  "JetMissile4": {
+   "part": "JetWingR",
+   "pos": [
+    5.4,
+    -0.9,
+    -3.5
+   ],
+   "dir": "-Z"
+  },
+  "JetFlashAtt": {
+   "part": "JetBody",
+   "pos": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "dir": null
+  }
+ },
+ "glow": {
+  "GlowLightAtt_Visor": {
+   "part": "JetCockpit",
+   "pos": [
+    0.0,
+    1.6,
+    -7.3
+   ]
+  },
+  "GlowLightAtt_Chest": {
+   "part": "JetBody",
+   "pos": [
+    0.0,
+    1.5,
+    -3.0
+   ]
+  },
+  "GlowLightAtt_NozzleL": {
+   "part": "JetBody",
+   "pos": [
+    -3.9,
+    -0.1,
+    6.0
+   ]
+  },
+  "GlowLightAtt_NozzleR": {
+   "part": "JetBody",
+   "pos": [
+    3.9,
+    -0.1,
+    6.0
+   ]
+  },
+  "GlowLightAtt_NozzleC": {
+   "part": "JetBody",
+   "pos": [
+    0.0,
+    0.2,
+    6.8
+   ]
+  }
+ },
+ "hitbox": {
+  "size": [
+   7.6,
+   4.0,
+   22.0
+  ],
+  "center": [
+   0.0,
+   -0.2,
+   -3.55
+  ]
+ },
+ "bbox_min": [
+  -11.15,
+  -2.45,
+  -14.55
+ ],
+ "bbox_max": [
+  11.15,
+  4.14,
+  10.65
+ ],
+ "com": [
+  -0.0,
+  -0.106,
+  0.094
+ ],
+ "source": "FalcoJet_r4_20261106.glb",
+ "stats": {
+  "parts": {
+   "JetBody": {
+    "cells": 250390,
+    "size": [
+     9.7,
+     4.1,
+     22.0
+    ],
+    "center": [
+     0.0,
+     -0.4,
+     -3.55
+    ]
+   },
+   "JetCockpit": {
+    "cells": 31448,
+    "size": [
+     2.5,
+     3.0,
+     5.1
+    ],
+    "center": [
+     0.0,
+     0.15,
+     -7.2
+    ]
+   },
+   "JetWingL": {
+    "cells": 16663,
+    "size": [
+     8.2,
+     1.5,
+     6.9
+    ],
+    "center": [
+     -7.05,
+     -0.5,
+     0.1
+    ]
+   },
+   "JetWingR": {
+    "cells": 16663,
+    "size": [
+     8.2,
+     1.5,
+     6.9
+    ],
+    "center": [
+     7.05,
+     -0.5,
+     0.1
+    ]
+   },
+   "JetTailL": {
+    "cells": 5012,
+    "size": [
+     1.65,
+     3.48,
+     7.5
+    ],
+    "center": [
+     -2.96,
+     2.4,
+     6.9
+    ]
+   },
+   "JetTailR": {
+    "cells": 5012,
+    "size": [
+     1.65,
+     3.48,
+     7.5
+    ],
+    "center": [
+     2.96,
+     2.4,
+     6.9
+    ]
+   }
+  },
+  "bbox_min": [
+   -11.15,
+   -2.45,
+   -14.55
+  ],
+  "bbox_max": [
+   11.15,
+   4.14,
+   10.65
+  ],
+  "size": [
+   22.3,
+   6.59,
+   25.2
+  ],
+  "com": [
+   -0.0,
+   -0.106,
+   0.094
+  ],
+  "com_dist": 0.142,
+  "hrp_fill": 0.379
+ }
+}
